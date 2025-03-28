@@ -4,7 +4,10 @@ QUITS is a modular and flexible circuit-level simulator for quantum low-density 
 
 QUITS is best used together with the following libraries:
 - [Stim](https://github.com/quantumlib/Stim) (fast stabilizer circuit simulator) 
-- [LDPC](https://github.com/quantumgizmos/ldpc) (BP-OSD, BP-LSD decoders for QLDPC codes) 
+- [LDPC](https://github.com/quantumgizmos/ldpc) (BP-OSD, BP-LSD decoders for QLDPC codes)
+
+See [docs/intro.ipynb](https://github.com/mkangquantum/quits/blob/main/doc/intro.ipynb) to get started!
+
 ## Installation
 
 To install this package from GitHub, use the following steps:

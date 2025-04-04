@@ -1,6 +1,8 @@
 # QUITS: A modular Qldpc code circUIT Simulator
 
-QUITS is a modular and flexible circuit-level simulator for quantum low-density parity check (QLDPC) codes. Its design allows users to freely combine LDPC code constructions, syndrome extraction circuits, decoding algorithms, and noise models, enabling comprehensive and customizable studies of the performance of QLDPC codes under circuit-level noise. QUITS supports several leading QLDPC families, including hypergraph product codes, lifted product codes, and balanced product codes.
+QUITS is a modular and flexible circuit-level simulator for quantum low-density parity check (QLDPC) codes. Its design allows users to freely combine LDPC code constructions, syndrome extraction circuits, decoding algorithms, and noise models, enabling comprehensive and customizable studies of the performance of QLDPC codes under circuit-level noise. QUITS supports several leading QLDPC families, including <b>hypergraph product codes, lifted product codes, and balanced product codes</b>. 
+
+Check out [arXiv:2504.02673](https://arxiv.org/abs/2504.02673) for a detailed description of our package. 
 
 QUITS is best used together with the following libraries:
 - [Stim](https://github.com/quantumlib/Stim) (fast stabilizer circuit simulator) 
@@ -23,3 +25,15 @@ To install this package from GitHub, use the following steps:
    ```
    pip install -e .
    ```
+
+# How to Cite Our Work
+
+If you use our work in your research, please cite it using the following reference:
+
+```bibtex
+@article{kang2025quantum,
+  title={QUITS: A modular Qldpc code circUIT Simulator},
+  author={Kang, Mingyu and Lin, Yingjia and Yao, Hanwen and Gökduman, Mert and Meinking, Arianna and Brown, Kenneth R},
+  journal={arXiv preprint arXiv:2504.02673},
+  year={2025}
+}

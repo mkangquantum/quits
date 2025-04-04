@@ -26,7 +26,7 @@ To install this package from GitHub, use the following steps:
    pip install -e .
    ```
 
-# How to Cite Our Work
+## How to Cite Our Work
 
 If you use our work in your research, please cite it using the following reference:
 

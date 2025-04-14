@@ -1,0 +1,9 @@
+*.pyc
+*.log
+*.egg-info
+.venv/*
+*.egg-info
+
+# Jupyter Notebook
+.ipynb_checkpoints
+**/*.ipynb_checkpoints/

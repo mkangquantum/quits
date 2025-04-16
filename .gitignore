@@ -2,7 +2,7 @@
 *.log
 *.egg-info
 .venv/*
-*.egg-info
+**/*.egg-info
 
 # Jupyter Notebook
 .ipynb_checkpoints

@@ -113,7 +113,14 @@ class QldpcCode:
             rev_graph = nx.Graph()
             rev_graph.add_nodes_from(self.rev_nodes[direction_ind])
             rev_graph.add_edges_from(self.rev_edges[direction_ind])
-            edge_colors[direction_ind] = list(nx.greedy_color(rev_graph).values())
+
+            edge_coloration = nx.greedy_color(rev_graph)
+            # Somehow the dictionary returned by nx.greedy_color shuffles the keys (rev_nodes[direction_ind])
+            # so the values (colors) need to be shuffled correctly. 
+            paired = list(zip(edge_coloration.keys(), edge_coloration.values()))
+            paired_sorted = sorted(paired, key=lambda x: x[0])
+            _, reordered_colors = zip(*paired_sorted)
+            edge_colors[direction_ind] = reordered_colors
 
         # Construct colored_edges (dictionary of edges of each direction and color)
         for direction_ind in range(len(self.colored_edges)):

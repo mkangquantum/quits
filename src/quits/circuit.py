@@ -104,6 +104,30 @@ def get_qldpc_mem_circuit(code, idle_error, sqgate_error, tqgate_error, spam_err
             
     return circ.circuit
 
+def check_overlapping_CX(circuit):
+    '''
+    Input stim circuit
+    print output: position in stim circuit, qubits that support overlapping gates in the same layer. 
+    Ideally, nothing should be printed, as there should be no overlapping gates in the same layer.
+    '''
+    repeat_element=[]
+    repeat_row=[]
+    for i in range(len(circuit)):
+        if circuit[i].name=='CX':
+            size=len(circuit[i].targets_copy())
+            gate_list=np.zeros(size,dtype=int)
+            for j in range(size):
+                gate_list[j]=circuit[i].targets_copy()[j].qubit_value
+            unique, counts = np.unique(gate_list, return_counts=True)
+
+            # Check for duplicates
+            duplicates = unique[counts > 1]
+            
+            if duplicates.size > 0:
+                print("Duplicates found:", i,duplicates)
+                repeat_row.append(i)
+                repeat_element.append(duplicates.copy())
+
 
 class Circuit:
     '''

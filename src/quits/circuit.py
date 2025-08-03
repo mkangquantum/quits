@@ -1,5 +1,5 @@
 """
-@author: Mingyu Kang
+@author: Mingyu Kang, Yingjia Lin
 """
 
 import numpy as np

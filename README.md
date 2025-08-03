@@ -1,3 +1,8 @@
+> 🚀 **New Release Available!**  
+> We just launched **v0.1.0** – important bug is fixed, so please check the release note if you have already been using QUITS.
+> [Check out the latest release notes »](https://github.com/mkangquantum/quits/releases/tag/v0.1.0)
+
+
 # QUITS: A modular Qldpc code circUIT Simulator
 
 QUITS is a modular and flexible circuit-level simulator for quantum low-density parity check (QLDPC) codes. Its design allows users to freely combine LDPC code constructions, syndrome extraction circuits, decoding algorithms, and noise models, enabling comprehensive and customizable studies of the performance of QLDPC codes under circuit-level noise. QUITS supports several leading QLDPC families, including <b>hypergraph product codes, lifted product codes, and balanced product codes</b>. 

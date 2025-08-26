@@ -320,6 +320,8 @@ def spacetime(circuit, hz, W, F, num_cor_rounds):
     '''Check_matrix for each window'''
     for k in range(num_cor_rounds):
         window_check_matrix=check_matrix[k*F*hz.shape[0]:(k*F+W)*hz.shape[0], col_min:]
+        if len(window_check_matrix.indptr)==1:
+            raise ValueError("There is no noise in one of the decoding window. This means there are redundant detectors that do not check for any error.")
         col_max=np.max(np.where(np.diff(window_check_matrix.indptr) > 0)[0]) #all the columns that affect the window
         window_check_matrix=window_check_matrix[:,:col_max+1]
         window_check_set.append(window_check_matrix)

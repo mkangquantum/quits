@@ -13,10 +13,8 @@ lift_size = 12
 p1=[0,1,5]
 p2=[0,1,8]
 
-
 code = BpcCode(p1, p2, lift_size, factor)  # Define the BpcCode object
 code.build_graph(seed=1)                   # Build the Tanner graph and assign directions to its edges.
-
 
 p = 2e-3           # physical error rate, does not matter in circuit distance search
 num_rounds = 2    # number of rounds (T-1)
@@ -27,14 +25,11 @@ model = circuit.detector_error_model(decompose_errors=False)
 detector_error_matrix, observables_matrix, priors= detector_error_model_to_matrix(model)
 
 err_list = circuit.search_for_undetectable_logical_errors(dont_explore_detection_event_sets_with_size_above=6,
-
                                                      dont_explore_edges_with_degree_above=6,
-                                                     dont_explore_edges_increasing_symptom_degree=False)#Return a combination of error mechanisms that create a non detectable logical error
+                                                     dont_explore_edges_increasing_symptom_degree=False) #Return a combination of error mechanisms that create a non detectable logical error
 #see also stim documentation: https://github.com/quantumlib/Stim/blob/main/doc/python_api_reference_vDev.md#stim.Circuit.search_for_undetectable_logical_errors
 
 print(len(err_list))
-
-
 
 
 #[[90,8,10]]
@@ -43,10 +38,8 @@ lift_size = 15
 p1=[0,1,5]
 p2=[0,2,7]
 
-
 code = BpcCode(p1, p2, lift_size, factor)  # Define the BpcCode object
 code.build_graph(seed=1)                   # Build the Tanner graph and assign directions to its edges.
-
 
 p = 2e-3           # physical error rate, does not matter in circuit distance search
 num_rounds = 2    # number of rounds (T-1)
@@ -57,21 +50,20 @@ model = circuit.detector_error_model(decompose_errors=False)
 detector_error_matrix, observables_matrix, priors= detector_error_model_to_matrix(model)
 
 err_list = circuit.search_for_undetectable_logical_errors(dont_explore_detection_event_sets_with_size_above=6,
-
                                                      dont_explore_edges_with_degree_above=6,
-                                                     dont_explore_edges_increasing_symptom_degree=False)#Return a combination of error mechanisms that create a non detectable logical error
+                                                     dont_explore_edges_increasing_symptom_degree=False) #Return a combination of error mechanisms that create a non detectable logical error
 
 print(len(err_list))
+
+
 #[[144,8,12]]
 factor=3
 lift_size = 24
 p1=[0,1,5]
 p2=[0,1,11]
 
-
 code = BpcCode(p1, p2, lift_size, factor)  # Define the BpcCode object
 code.build_graph(seed=1)                   # Build the Tanner graph and assign directions to its edges.
-
 
 p = 2e-3           # physical error rate, does not matter in circuit distance search
 num_rounds = 1    # number of rounds (T-1)
@@ -82,7 +74,6 @@ model = circuit.detector_error_model(decompose_errors=False)
 detector_error_matrix, observables_matrix, priors= detector_error_model_to_matrix(model)
 
 err_list = circuit.search_for_undetectable_logical_errors(dont_explore_detection_event_sets_with_size_above=6,
-
                                                      dont_explore_edges_with_degree_above=6,
-                                                     dont_explore_edges_increasing_symptom_degree=False)#Return a combination of error mechanisms that create a non detectable logical error
+                                                     dont_explore_edges_increasing_symptom_degree=False) #Return a combination of error mechanisms that create a non detectable logical error
 print(len(err_list))

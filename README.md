@@ -2,7 +2,7 @@
 > **v0.2.0** - base matrices of QLP codes can now be polynomial entries. [Check out the latest release notes »](https://github.com/mkangquantum/quits/releases/tag/v0.2.0)
 > 
 > **v0.1.0** – important bug is fixed, so please check the release note if you have already been using QUITS.
-> [Check out the latest release notes »](https://github.com/mkangquantum/quits/releases/tag/v0.1.0)
+> [Check out the release notes »](https://github.com/mkangquantum/quits/releases/tag/v0.1.0)
 
 
 # QUITS: A modular Qldpc code circUIT Simulator

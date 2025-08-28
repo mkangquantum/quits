@@ -385,146 +385,7 @@ class QlpCode(QldpcCode):
         # Color the edges of self.graph
         self.color_edges()
         return
-
-
-# Balanced product cyclic (BPC) code
-class BpcCode(QldpcCode):
-    def __init__(self, p1, p2, lift_size, factor):
-        '''
-        :param p1: First polynomial used to construct the bp code. Each entry of the list is the power of each polynomial term. 
-                   e.g. p1 = [0, 1, 5] represents the polynomial 1 + x + x^5
-        :param p2: Second polynomial used to construct the bp code. Each entry of the list is the power of each polynomial term. 
-        :param lift_size: Size of cyclic matrix to which each monomial entry is lifted. 
-        :param factor: Power of the monomial generator of the cyclic subgroup that is factored out by the balanced product. 
-                       e.g. if factor == 3, cyclic subgroup <x^3> is factored out. 
-        '''
-        super().__init__()
-
-        self.p1, self.p2 = p1, p2
-        self.lift_size = lift_size
-        self.factor = factor
-
-        b1 = np.zeros((self.factor, self.factor), dtype=int)
-        b1_placeholder = np.zeros((self.factor, self.factor), dtype=int)
-        for power in p1:
-            mat, mat_placeholder = self.get_block_mat(power)
-            b1 = b1 + mat
-            b1_placeholder = b1_placeholder + mat_placeholder
-        b1T = (self.lift_size - b1.T) % self.lift_size
-        b1T_placeholder = b1_placeholder.T
-        
-        self.b1, self.b1T = b1, b1T
-        self.b1_placeholder, self.b1T_placeholder = b1_placeholder, b1T_placeholder
-
-        h1 = self.lift(self.lift_size, b1, b1_placeholder)
-        h1T = self.lift(self.lift_size, b1T, b1T_placeholder)
-
-        h2 = np.zeros((self.lift_size, self.lift_size), dtype=int)
-        for power in p2:
-            h2 = h2 + self.get_circulant_mat(self.lift_size, power)
-        h2 = np.kron(np.eye(self.factor, dtype=int), h2)
-        h2T = h2.T
-
-        self.hz = np.concatenate((h2, h1T), axis=1)
-        self.hx = np.concatenate((h1, h2T), axis=1)
-        self.lz, self.lx = compute_lz_and_lx(self.hx, self.hz)
-
-    def get_block_mat(self, power):
-        gen_mat = self.get_circulant_mat(self.factor, 1)
-        gen_mat[0,-1] = 2
-
-        mat = np.linalg.matrix_power(gen_mat, power)
-        mat_placeholder = (mat > 0) * 1
-
-        mat = np.log2(mat + 1e-8).astype(int)
-        mat = mat * mat_placeholder * self.factor
-        return mat, mat_placeholder
-
-    def build_graph(self, seed=1):
-
-        super().build_graph()
-        data_qubits, zcheck_qubits, xcheck_qubits = [], [], []
-
-        # Add nodes to the Tanner graph
-        for i in range(self.factor):
-            for l in range(self.lift_size):
-                node = i * self.lift_size + l
-                data_qubits += [node]
-                self.graph.add_node(node, pos=(2*i, 0))
-                self.node_colors += ['blue']
-
-        start = self.factor * self.lift_size
-        for i in range(self.factor):
-            for l in range(self.lift_size):
-                node = start + i * self.lift_size + l
-                xcheck_qubits += [node] 
-                self.graph.add_node(node, pos=(2*i+1, 0))
-                self.node_colors += ['purple']
-                    
-        start = 2 * self.factor * self.lift_size
-        for i in range(self.factor):
-            for l in range(self.lift_size):
-                node = start + i * self.lift_size + l
-                zcheck_qubits += [node] 
-                self.graph.add_node(node, pos=(2*i, 1))
-                self.node_colors += ['green']
-
-        start = 3 * self.factor * self.lift_size
-        for i in range(self.factor):
-            for l in range(self.lift_size):
-                node = start + i * self.lift_size + l
-                data_qubits += [node]
-                self.graph.add_node(node, pos=(2*i+1, 1))
-                self.node_colors += ['blue']             
-
-        self.data_qubits = sorted(np.array(data_qubits))
-        self.zcheck_qubits = sorted(np.array(zcheck_qubits))
-        self.xcheck_qubits = sorted(np.array(xcheck_qubits))
-        self.check_qubits = np.concatenate((self.zcheck_qubits, self.xcheck_qubits))
-        self.all_qubits = sorted(np.array(data_qubits + zcheck_qubits + xcheck_qubits))   
-
-        hedge_bool_list = self.get_classical_edge_bools(np.ones(self.b1.shape, dtype=int), seed)
-        vedge_bool_list = self.get_classical_edge_bools(np.ones(self.b1.shape, dtype=int), seed)        
-
-        # Add edges to the Tanner graph of each direction
-        edge_no = 0
-        for i in range(self.factor):          
-            for j in range(self.factor):   
-                shift = self.b1[i,j] 
-                edge_bool = hedge_bool_list[(i, j)]
-
-                for l in range(self.lift_size):
-                    for k in range(2):  # 0 : bottom, 1 : top              
-                        if k ^ edge_bool:
-                            direction_ind = self.direction_inds['E']
-                        else:
-                            direction_ind = self.direction_inds['W']
-
-                        control = (2*k+1)*self.factor*self.lift_size + i*self.lift_size + (l + shift) % self.lift_size
-                        target = 2*k*self.factor*self.lift_size + j*self.lift_size + l
-                        self.add_edge(edge_no, direction_ind, control, target)
-                        edge_no += 1
-
-        for i in range(self.factor):          
-            for j in range(self.factor):   
-                shift = self.p2[j]
-                edge_bool = vedge_bool_list[(i, j)]
-
-                for l in range(self.lift_size):
-                    for k in range(2):  # 0 : left, 1 : right              
-                        if k ^ edge_bool:
-                            direction_ind = self.direction_inds['N']
-                        else:
-                            direction_ind = self.direction_inds['S']
-
-                        control = k*self.factor*self.lift_size + i*self.lift_size + l
-                        target = (2+k)*self.factor*self.lift_size + i*self.lift_size + (l + shift) % self.lift_size
-                        self.add_edge(edge_no, direction_ind, control, target)
-                        edge_no += 1                                          
-
-        # Color the edges of self.graph
-        self.color_edges()
-        return
+    
 
 # Quasi-cyclic lifted product (QLP) code with polynomial entries in the base matrices
 class QlpCode2(QldpcCode):
@@ -682,3 +543,143 @@ class QlpCode2(QldpcCode):
         # Color the edges of self.graph
         self.color_edges()
         return    
+
+
+# Balanced product cyclic (BPC) code
+class BpcCode(QldpcCode):
+    def __init__(self, p1, p2, lift_size, factor):
+        '''
+        :param p1: First polynomial used to construct the bp code. Each entry of the list is the power of each polynomial term. 
+                   e.g. p1 = [0, 1, 5] represents the polynomial 1 + x + x^5
+        :param p2: Second polynomial used to construct the bp code. Each entry of the list is the power of each polynomial term. 
+        :param lift_size: Size of cyclic matrix to which each monomial entry is lifted. 
+        :param factor: Power of the monomial generator of the cyclic subgroup that is factored out by the balanced product. 
+                       e.g. if factor == 3, cyclic subgroup <x^3> is factored out. 
+        '''
+        super().__init__()
+
+        self.p1, self.p2 = p1, p2
+        self.lift_size = lift_size
+        self.factor = factor
+
+        b1 = np.zeros((self.factor, self.factor), dtype=int)
+        b1_placeholder = np.zeros((self.factor, self.factor), dtype=int)
+        for power in p1:
+            mat, mat_placeholder = self.get_block_mat(power)
+            b1 = b1 + mat
+            b1_placeholder = b1_placeholder + mat_placeholder
+        b1T = (self.lift_size - b1.T) % self.lift_size
+        b1T_placeholder = b1_placeholder.T
+        
+        self.b1, self.b1T = b1, b1T
+        self.b1_placeholder, self.b1T_placeholder = b1_placeholder, b1T_placeholder
+
+        h1 = self.lift(self.lift_size, b1, b1_placeholder)
+        h1T = self.lift(self.lift_size, b1T, b1T_placeholder)
+
+        h2 = np.zeros((self.lift_size, self.lift_size), dtype=int)
+        for power in p2:
+            h2 = h2 + self.get_circulant_mat(self.lift_size, power)
+        h2 = np.kron(np.eye(self.factor, dtype=int), h2)
+        h2T = h2.T
+
+        self.hz = np.concatenate((h2, h1T), axis=1)
+        self.hx = np.concatenate((h1, h2T), axis=1)
+        self.lz, self.lx = compute_lz_and_lx(self.hx, self.hz)
+
+    def get_block_mat(self, power):
+        gen_mat = self.get_circulant_mat(self.factor, 1)
+        gen_mat[0,-1] = 2
+
+        mat = np.linalg.matrix_power(gen_mat, power)
+        mat_placeholder = (mat > 0) * 1
+
+        mat = np.log2(mat + 1e-8).astype(int)
+        mat = mat * mat_placeholder * self.factor
+        return mat, mat_placeholder
+
+    def build_graph(self, seed=1):
+
+        super().build_graph()
+        data_qubits, zcheck_qubits, xcheck_qubits = [], [], []
+
+        # Add nodes to the Tanner graph
+        for i in range(self.factor):
+            for l in range(self.lift_size):
+                node = i * self.lift_size + l
+                data_qubits += [node]
+                self.graph.add_node(node, pos=(2*i, 0))
+                self.node_colors += ['blue']
+
+        start = self.factor * self.lift_size
+        for i in range(self.factor):
+            for l in range(self.lift_size):
+                node = start + i * self.lift_size + l
+                xcheck_qubits += [node] 
+                self.graph.add_node(node, pos=(2*i+1, 0))
+                self.node_colors += ['purple']
+                    
+        start = 2 * self.factor * self.lift_size
+        for i in range(self.factor):
+            for l in range(self.lift_size):
+                node = start + i * self.lift_size + l
+                zcheck_qubits += [node] 
+                self.graph.add_node(node, pos=(2*i, 1))
+                self.node_colors += ['green']
+
+        start = 3 * self.factor * self.lift_size
+        for i in range(self.factor):
+            for l in range(self.lift_size):
+                node = start + i * self.lift_size + l
+                data_qubits += [node]
+                self.graph.add_node(node, pos=(2*i+1, 1))
+                self.node_colors += ['blue']             
+
+        self.data_qubits = sorted(np.array(data_qubits))
+        self.zcheck_qubits = sorted(np.array(zcheck_qubits))
+        self.xcheck_qubits = sorted(np.array(xcheck_qubits))
+        self.check_qubits = np.concatenate((self.zcheck_qubits, self.xcheck_qubits))
+        self.all_qubits = sorted(np.array(data_qubits + zcheck_qubits + xcheck_qubits))   
+
+        hedge_bool_list = self.get_classical_edge_bools(np.ones(self.b1.shape, dtype=int), seed)
+        vedge_bool_list = self.get_classical_edge_bools(np.ones(self.b1.shape, dtype=int), seed)        
+
+        # Add edges to the Tanner graph of each direction
+        edge_no = 0
+        for i in range(self.factor):          
+            for j in range(self.factor):   
+                shift = self.b1[i,j] 
+                edge_bool = hedge_bool_list[(i, j)]
+
+                for l in range(self.lift_size):
+                    for k in range(2):  # 0 : bottom, 1 : top              
+                        if k ^ edge_bool:
+                            direction_ind = self.direction_inds['E']
+                        else:
+                            direction_ind = self.direction_inds['W']
+
+                        control = (2*k+1)*self.factor*self.lift_size + i*self.lift_size + (l + shift) % self.lift_size
+                        target = 2*k*self.factor*self.lift_size + j*self.lift_size + l
+                        self.add_edge(edge_no, direction_ind, control, target)
+                        edge_no += 1
+
+        for i in range(self.factor):          
+            for j in range(self.factor):   
+                shift = self.p2[j]
+                edge_bool = vedge_bool_list[(i, j)]
+
+                for l in range(self.lift_size):
+                    for k in range(2):  # 0 : left, 1 : right              
+                        if k ^ edge_bool:
+                            direction_ind = self.direction_inds['N']
+                        else:
+                            direction_ind = self.direction_inds['S']
+
+                        control = k*self.factor*self.lift_size + i*self.lift_size + l
+                        target = (2+k)*self.factor*self.lift_size + i*self.lift_size + (l + shift) % self.lift_size
+                        self.add_edge(edge_no, direction_ind, control, target)
+                        edge_no += 1                                          
+
+        # Color the edges of self.graph
+        self.color_edges()
+        return

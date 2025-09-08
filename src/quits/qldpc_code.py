@@ -5,8 +5,9 @@
 import numpy as np
 import random
 import networkx as nx
-from .ldpc_utility import compute_lz_and_lx
 from scipy.linalg import circulant
+from ldpc.mod2.mod2_numpy import nullspace
+from .ldpc_utility import compute_lz_and_lx
 
 # Parent class 
 class QldpcCode:
@@ -185,7 +186,33 @@ class HgpCode(QldpcCode):
         self.hx = np.concatenate((np.kron(np.eye(self.n2, dtype=int), h1), 
                                   np.kron(h2.T, np.eye(self.r1, dtype=int))), axis=1)
         
-        self.lz, self.lx = compute_lz_and_lx(self.hx, self.hz)
+        self.lz, self.lx = self.get_logicals()    # logical operators in the "canonical form"
+
+    def get_logicals(self):
+        '''
+        :return: Logical operators of the code as a list of tuples (logical_z, logical_x)
+                 where logical_z and logical_x are numpy arrays of shape (num_logicals, num_data_qubits)
+                 The logicals are written in the "canonical form" as described in arXiv:2204.10812
+        '''
+        l1 = nullspace(self.h1)
+        l2 = nullspace(self.h2)
+        lz = np.zeros((l1.shape[0]*l2.shape[0], self.hz.shape[1]), dtype=int)
+        lx = np.zeros((l1.shape[0]*l2.shape[0], self.hx.shape[1]), dtype=int)
+
+        cnt = 0
+        for i in range(l2.shape[0]):
+            ei = np.zeros(self.h2.shape[1], dtype=int)
+            ei[i] = 1
+            for j in range(l1.shape[0]):
+                ej = np.zeros(self.h1.shape[1], dtype=int)
+                ej[j] = 1
+
+                lz[cnt,:self.n1*self.n2] = np.kron(ei, l1[j,:])
+                lx[cnt,:self.n1*self.n2] = np.kron(l2[i,:], ej)
+
+                cnt += 1
+
+        return lz, lx
 
     def build_graph(self, seed=1):
 
@@ -543,7 +570,7 @@ class QlpCode2(QldpcCode):
         # Color the edges of self.graph
         self.color_edges()
         return    
-
+    
 
 # Balanced product cyclic (BPC) code
 class BpcCode(QldpcCode):
@@ -663,13 +690,19 @@ class BpcCode(QldpcCode):
                         self.add_edge(edge_no, direction_ind, control, target)
                         edge_no += 1
 
+        def shuffle(node_no, qubit_no):
+            m, r = qubit_no // self.factor, qubit_no % self.factor
+            return r, self.lift_size // self.factor * node_no + m
+
         for i in range(self.factor):          
-            for j in range(self.factor):   
+            for j in range(len(self.p2)):   
                 shift = self.p2[j]
-                edge_bool = vedge_bool_list[(i, j)]
 
                 for l in range(self.lift_size):
-                    for k in range(2):  # 0 : left, 1 : right              
+                    for k in range(2):  # 0 : left, 1 : right   
+                        i_shuffled, _ = shuffle(i, l)
+                        j_shuffled, _ = shuffle(i, (l + shift) % self.lift_size)    
+                        edge_bool = vedge_bool_list[(i_shuffled, j_shuffled)]
                         if k ^ edge_bool:
                             direction_ind = self.direction_inds['N']
                         else:
@@ -683,3 +716,4 @@ class BpcCode(QldpcCode):
         # Color the edges of self.graph
         self.color_edges()
         return
+

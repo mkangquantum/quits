@@ -573,6 +573,9 @@ class QlpCode2(QldpcCode):
     
 
 # Balanced product cyclic (BPC) code
+# To precisely match arXiv:2411.03302, you should insert $p_2^T$ from the paper into $p_2$ here. 
+# That is, for the second polynomial, the entries should be lift_size minus the powers in arXiv:2411.03302.
+# This is due to the different convention of the parity check matrix we use in QUITS. 
 class BpcCode(QldpcCode):
     def __init__(self, p1, p2, lift_size, factor):
         '''
@@ -612,7 +615,7 @@ class BpcCode(QldpcCode):
 
         self.hz = np.concatenate((h2, h1T), axis=1)
         self.hx = np.concatenate((h1, h2T), axis=1)
-        self.lz, self.lx = compute_lz_and_lx(self.hx, self.hz)
+        self.lz, self.lx = self.get_logicals()    # logical operators in the "canonical form"
 
     def get_block_mat(self, power):
         gen_mat = self.get_circulant_mat(self.factor, 1)
@@ -624,6 +627,43 @@ class BpcCode(QldpcCode):
         mat = np.log2(mat + 1e-8).astype(int)
         mat = mat * mat_placeholder * self.factor
         return mat, mat_placeholder
+    
+    def get_logicals(self):
+        '''
+        :return: Logical operators of the code as a list of tuples (logical_z, logical_x)
+                 where logical_z and logical_x are numpy arrays of shape (num_logicals, num_data_qubits)
+                 The logicals are written in the "canonical form" as described in Eq. 30 of arXiv:2411.03302
+        '''
+
+        lz = np.zeros((2*(self.factor-1)**2, self.hz.shape[1]), dtype=int)
+        lx = np.zeros((2*(self.factor-1)**2, self.hx.shape[1]), dtype=int)
+
+        cnt = 0
+        for i in range(self.factor-1):
+            for j in range(self.factor-1):
+                yi_vec = self.get_circulant_mat(self.factor, 0)[:,i]
+                xjgx_vec = (self.get_circulant_mat(self.factor, 0) + self.get_circulant_mat(self.factor, 1))[:,j]
+                xjgx_vec = np.tile(xjgx_vec, self.lift_size//self.factor)
+
+                prod = np.kron(yi_vec, xjgx_vec)
+                lz[cnt,:] = np.concatenate((np.zeros(self.hz.shape[1]-len(prod), dtype=int), prod))
+                lx[cnt,:] = np.concatenate((prod, np.zeros(self.hx.shape[1]-len(prod), dtype=int)))
+
+                cnt += 1
+
+        for i in range(self.factor-1):
+            for j in range(self.factor-1):
+                yigy_vec = (self.get_circulant_mat(self.factor, 0) + self.get_circulant_mat(self.factor, 1))[:,i]
+                xj_vec = self.get_circulant_mat(self.factor, 0)[:,j]      
+                xj_vec = np.tile(xj_vec, self.lift_size//self.factor)
+
+                prod = np.kron(yigy_vec, xj_vec)
+                lz[cnt,:] = np.concatenate((prod, np.zeros(self.hz.shape[1]-len(prod), dtype=int)))
+                lx[cnt,:] = np.concatenate((np.zeros(self.hx.shape[1]-len(prod), dtype=int), prod))
+                
+                cnt += 1
+
+        return lz, lx    
 
     def build_graph(self, seed=1):
 

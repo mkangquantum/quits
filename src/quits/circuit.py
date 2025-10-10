@@ -11,10 +11,10 @@ def get_qldpc_mem_circuit(code, idle_error, sqgate_error, tqgate_error, spam_err
     Errors occur at each and every gate. 
 
     :param code: The qldpc_code class from qldpc.py
-    :param idle_error: Rate of depolarizing error
-    :param sqgate_error: Rate of single-qubit gate error
-    :param tqgate_error: Rate of two-qubit gate error
-    :param spam_error: Rate of state preparation and measurement error
+    :param idle_error: Rate of depolarizing error. Float or tuple of 3 floats (px, py, pz)
+    :param sqgate_error: Rate of single-qubit gate error. Float or tuple of 3 floats (px, py, pz)
+    :param tqgate_error: Rate of two-qubit gate error. Float or tuple of 15 floats (pix, ..., pzz)
+    :param spam_error: Rate of state preparation and measurement error. Float
     :param num_rounds: Number of stabilizer measurement rounds
     :param basis: Basis in which logical codewords are stored. Options are 'Z' and 'X'.
     :param get_all_detectors: If True, all detectors in the Z and X bases are obtained. 
@@ -200,7 +200,13 @@ class Circuit:
             return ''
         
         c = self.margin
-        c += 'DEPOLARIZE1(%.10f) '%self.idle_error
+        if type(self.idle_error) == float or type(self.idle_error) == np.float64:
+            c += 'DEPOLARIZE1(%.10f) '%self.idle_error
+        else:
+            c += 'PAULI_CHANNEL_1('
+            for p in self.idle_error:
+                c += '%.10f, '%p
+            c = c[:-2] + ') '
         for q in qubits:
             c += '%d '%q
         c += '\n'
@@ -215,9 +221,15 @@ class Circuit:
             c += '%d '%q
         c += '\n'
         
-        if self.sqgate_error > 0.:
+        if self.sqgate_error != 0. and self.sqgate_error != 0:
             c += self.margin
-            c += 'DEPOLARIZE1(%.10f) '%self.sqgate_error
+            if type(self.sqgate_error) == float or type(self.sqgate_error) == np.float64:
+                c += 'DEPOLARIZE1(%.10f) '%self.sqgate_error
+            else:
+                c += 'PAULI_CHANNEL_1('
+                for p in self.sqgate_error:
+                    c += '%.10f, '%p
+                c = c[:-2] + ') '
             for q in qubits:
                 c += '%d '%q
             c += '\n'
@@ -239,9 +251,15 @@ class Circuit:
             c += '%d '%q
         c += '\n'
         
-        if self.tqgate_error > 0.:
+        if self.tqgate_error != 0. and self.tqgate_error != 0:
             c += self.margin
-            c += 'DEPOLARIZE2(%.10f) '%self.tqgate_error
+            if type(self.tqgate_error) == float or type(self.tqgate_error) == np.float64:
+                c += 'DEPOLARIZE2(%.10f) '%self.tqgate_error
+            else:
+                c += 'PAULI_CHANNEL_2('
+                for p in self.tqgate_error:
+                    c += '%.10f, '%p
+                c = c[:-2] + ') '
             for q in qubits:
                 c += '%d '%q
             c += '\n'

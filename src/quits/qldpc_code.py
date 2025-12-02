@@ -196,10 +196,8 @@ class HgpCode(QldpcCode):
         '''
         l1 = nullspace(self.h1)
         l2 = nullspace(self.h2)
-        l1T = nullspace(self.h1.T)
-        l2T = nullspace(self.h2.T)  
-        lz = np.zeros((l1.shape[0]*l2.shape[0] + l1T.shape[0]*l2T.shape[0], self.hz.shape[1]), dtype=int)
-        lx = np.zeros((l1.shape[0]*l2.shape[0] + l1T.shape[0]*l2T.shape[0], self.hx.shape[1]), dtype=int)
+        lz = np.zeros((l1.shape[0]*l2.shape[0], self.hz.shape[1]), dtype=int)
+        lx = np.zeros((l1.shape[0]*l2.shape[0], self.hx.shape[1]), dtype=int)
 
         cnt = 0
         for i in range(l2.shape[0]):
@@ -211,18 +209,6 @@ class HgpCode(QldpcCode):
 
                 lz[cnt,:self.n1*self.n2] = np.kron(ei, l1[j,:])
                 lx[cnt,:self.n1*self.n2] = np.kron(l2[i,:], ej)
-
-                cnt += 1
-
-        for i in range(l2T.shape[0]):
-            ei = np.zeros(self.h2.shape[1], dtype=int)
-            ei[i] = 1
-            for j in range(l1T.shape[0]):
-                ej = np.zeros(self.h1.shape[1], dtype=int)
-                ej[j] = 1
-
-                lz[cnt,-self.n1*self.n2:] = np.kron(l2T[j,:], ej)
-                lx[cnt,-self.n1*self.n2:] = np.kron(ei, l1T[i,:])
 
                 cnt += 1
 

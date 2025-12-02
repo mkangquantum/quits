@@ -177,21 +177,23 @@ class HgpCode(QldpcCode):
         '''
         super().__init__()
 
-        self.h1, self.h2 = h1, h2  
-        self.n1, self.n2 = h1.shape[1], h2.shape[1]
-        self.l1, self.l2 = nullspace(h1), nullspace(h2)
-        self.k1, self.k2 = self.l1.shape[0], self.l2.shape[0]
-        self.r1, self.r2 = self.n1 - self.k1, self.n2 - self.k2
+        self.h1, self.h2 = h1, h2    
+        self.r1, self.n1 = h1.shape
+        self.r2, self.n2 = h2.shape
 
-        self.l1T, self.l2T = nullspace(h1.T), nullspace(h2.T)
-        self.k1T, self.k2T = self.l1T.shape[0], self.l2T.shape[0]
-
-        self.hz = np.concatenate((np.kron(self.h2[:self.r2,:], np.eye(self.n1, dtype=int)), 
-                                  np.kron(np.eye(self.r2, dtype=int), self.h1.T[:,:self.r1])), axis=1)
-        self.hx = np.concatenate((np.kron(np.eye(self.n2, dtype=int), self.h1[:self.r1,:]), 
-                                  np.kron(self.h2.T[:,:self.r2], np.eye(self.r1, dtype=int))), axis=1)
+        self.hz = np.concatenate((np.kron(h2, np.eye(self.n1, dtype=int)), 
+                                  np.kron(np.eye(self.r2, dtype=int), h1.T)), axis=1)
+        self.hx = np.concatenate((np.kron(np.eye(self.n2, dtype=int), h1), 
+                                  np.kron(h2.T, np.eye(self.r1, dtype=int))), axis=1)
         
-        self.lz, self.lx = self.get_logicals()    # logical operators in the "canonical form"
+        self.l1 = nullspace(self.h1)
+        self.l2 = nullspace(self.h2)
+        self.k1, self.k2 = self.l1.shape[0], self.l2.shape[0]
+
+        if self.r1 == self.n1 - self.k1 and self.r2 == self.n2 - self.k2:   # If both classical parity check matrices are full-rank
+            self.lz, self.lx = self.get_logicals()                          # set logical operators in the "canonical form"
+        else:
+            self.lz, self.lx = compute_lz_and_lx(self.hx, self.hz)
 
     def get_logicals(self):
         '''
@@ -199,8 +201,8 @@ class HgpCode(QldpcCode):
                  where logical_z and logical_x are numpy arrays of shape (num_logicals, num_data_qubits)
                  The logicals are written in the "canonical form" as described in arXiv:2204.10812
         '''
-        lz = np.zeros((self.k1*self.k2 + self.k1T*self.k2T, self.hz.shape[1]), dtype=int)
-        lx = np.zeros((self.k1*self.k2 + self.k1T*self.k2T, self.hx.shape[1]), dtype=int)
+        lz = np.zeros((self.k1*self.k2, self.hz.shape[1]), dtype=int)
+        lx = np.zeros((self.k1*self.k2, self.hx.shape[1]), dtype=int)
 
         cnt = 0
         for i in range(self.k2):
@@ -210,20 +212,8 @@ class HgpCode(QldpcCode):
                 ej = np.zeros(self.h1.shape[1], dtype=int)
                 ej[j] = 1
 
-                lz[cnt, :self.n1*self.n2] = np.kron(ei, self.l1[j,:])
-                lx[cnt, :self.n1*self.n2] = np.kron(self.l2[i,:], ej)
-
-                cnt += 1
-
-        for i in range(self.k2T):
-            ei = np.zeros(self.h2.shape[1], dtype=int)
-            ei[i] = 1
-            for j in range(self.k1T):
-                ej = np.zeros(self.h1.shape[1], dtype=int)
-                ej[j] = 1
-
-                lz[cnt, -self.n1*self.n2:] = np.kron(self.l2T[j,:], ej)
-                lx[cnt, -self.n1*self.n2:] = np.kron(ei, self.l1T[i,:])
+                lz[cnt,:self.n1*self.n2] = np.kron(ei, self.l1[j,:])
+                lx[cnt,:self.n1*self.n2] = np.kron(self.l2[i,:], ej)
 
                 cnt += 1
 

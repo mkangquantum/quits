@@ -186,7 +186,14 @@ class HgpCode(QldpcCode):
         self.hx = np.concatenate((np.kron(np.eye(self.n2, dtype=int), h1), 
                                   np.kron(h2.T, np.eye(self.r1, dtype=int))), axis=1)
         
-        self.lz, self.lx = self.get_logicals()    # logical operators in the "canonical form"
+        self.l1 = nullspace(self.h1)
+        self.l2 = nullspace(self.h2)
+        self.k1, self.k2 = self.l1.shape[0], self.l2.shape[0]
+
+        if self.r1 == self.n1 - self.k1 and self.r2 == self.n2 - self.k2:   # If both classical parity check matrices are full-rank
+            self.lz, self.lx = self.get_logicals()                          # set logical operators in the "canonical form"
+        else:
+            self.lz, self.lx = compute_lz_and_lx(self.hx, self.hz)
 
     def get_logicals(self):
         '''
@@ -194,21 +201,19 @@ class HgpCode(QldpcCode):
                  where logical_z and logical_x are numpy arrays of shape (num_logicals, num_data_qubits)
                  The logicals are written in the "canonical form" as described in arXiv:2204.10812
         '''
-        l1 = nullspace(self.h1)
-        l2 = nullspace(self.h2)
-        lz = np.zeros((l1.shape[0]*l2.shape[0], self.hz.shape[1]), dtype=int)
-        lx = np.zeros((l1.shape[0]*l2.shape[0], self.hx.shape[1]), dtype=int)
+        lz = np.zeros((self.k1*self.k2, self.hz.shape[1]), dtype=int)
+        lx = np.zeros((self.k1*self.k2, self.hx.shape[1]), dtype=int)
 
         cnt = 0
-        for i in range(l2.shape[0]):
+        for i in range(self.k2):
             ei = np.zeros(self.h2.shape[1], dtype=int)
             ei[i] = 1
-            for j in range(l1.shape[0]):
+            for j in range(self.k1):
                 ej = np.zeros(self.h1.shape[1], dtype=int)
                 ej[j] = 1
 
-                lz[cnt,:self.n1*self.n2] = np.kron(ei, l1[j,:])
-                lx[cnt,:self.n1*self.n2] = np.kron(l2[i,:], ej)
+                lz[cnt,:self.n1*self.n2] = np.kron(ei, self.l1[j,:])
+                lx[cnt,:self.n1*self.n2] = np.kron(self.l2[i,:], ej)
 
                 cnt += 1
 

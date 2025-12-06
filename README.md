@@ -43,6 +43,9 @@ If you use our work in your research, please cite it using the following referen
 @article{kang2025quantum,
   title={QUITS: A modular Qldpc code circUIT Simulator},
   author={Kang, Mingyu and Lin, Yingjia and Yao, Hanwen and Gökduman, Mert and Meinking, Arianna and Brown, Kenneth R},
-  journal={arXiv preprint arXiv:2504.02673},
-  year={2025}
+  journal={Quantum},
+  volume={9},
+  pages={1931},
+  year={2025},
+  publisher={Verein zur F{\"o}rderung des Open Access Publizierens in den Quantenwissenschaften}
 }

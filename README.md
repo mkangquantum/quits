@@ -42,12 +42,16 @@ To install this package from GitHub, use the following steps:
 If you use our work in your research, please cite it using the following reference:
 
 ```bibtex
-@article{kang2025quantum,
-  title={QUITS: A modular Qldpc code circUIT Simulator},
-  author={Kang, Mingyu and Lin, Yingjia and Yao, Hanwen and Gökduman, Mert and Meinking, Arianna and Brown, Kenneth R},
-  journal={Quantum},
-  volume={9},
-  pages={1931},
-  year={2025},
-  publisher={Verein zur F{\"o}rderung des Open Access Publizierens in den Quantenwissenschaften}
+@article{Kang2025quitsmodularqldpc,
+  doi = {10.22331/q-2025-12-05-1931},
+  url = {https://doi.org/10.22331/q-2025-12-05-1931},
+  title = {{QUITS}: {A} modular {Q}ldpc code circ{UIT} {S}imulator},
+  author = {Kang, Mingyu and Lin, Yingjia and Yao, Hanwen and G{\"{o}}kduman, Mert and Meinking, Arianna and Brown, Kenneth R.},
+  journal = {{Quantum}},
+  issn = {2521-327X},
+  publisher = {{Verein zur F{\"{o}}rderung des Open Access Publizierens in den Quantenwissenschaften}},
+  volume = {9},
+  pages = {1931},
+  month = dec,
+  year = {2025}
 }

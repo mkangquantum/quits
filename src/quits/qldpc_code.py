@@ -620,7 +620,8 @@ class BpcCode(QldpcCode):
 
         self.hz = np.concatenate((h2, h1T), axis=1)
         self.hx = np.concatenate((h1, h2T), axis=1)
-        self.lz, self.lx = self.get_logicals()    # logical operators in the "canonical form"
+        self.lz, self.lx = compute_lz_and_lx(self.hx, self.hz)
+        # self.lz, self.lx = self.get_logicals()    # logical operators in the "canonical form"
 
     def get_block_mat(self, power):
         gen_mat = self.get_circulant_mat(self.factor, 1)
@@ -633,6 +634,7 @@ class BpcCode(QldpcCode):
         mat = mat * mat_placeholder * self.factor
         return mat, mat_placeholder
     
+    # WRONG; SHOULD BE FIXED LATER
     def get_logicals(self):
         '''
         :return: Logical operators of the code as a list of tuples (logical_z, logical_x)

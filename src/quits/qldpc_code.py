@@ -8,6 +8,7 @@ import networkx as nx
 from scipy.linalg import circulant
 from ldpc.mod2.mod2_numpy import nullspace
 from .ldpc_utility import compute_lz_and_lx
+from .gf2_utility import *
 
 # Parent class 
 class QldpcCode:
@@ -196,25 +197,24 @@ class HgpCode(QldpcCode):
             self.lz, self.lx = compute_lz_and_lx(self.hx, self.hz)
 
     def get_logicals(self):
-        '''
-        :return: Logical operators of the code as a list of tuples (logical_z, logical_x)
-                 where logical_z and logical_x are numpy arrays of shape (num_logicals, num_data_qubits)
-                 The logicals are written in the "canonical form" as described in arXiv:2204.10812
-        '''
-        lz = np.zeros((self.k1*self.k2, self.hz.shape[1]), dtype=int)
-        lx = np.zeros((self.k1*self.k2, self.hx.shape[1]), dtype=int)
+        """
+        Canonical logicals for your HGP convention, assuming k1^T=k2^T=0.
+        Returns:
+          lz, lx: shape (k1*k2, num_data_qubits) as uint8.
+        """
+        E1 = gf2_coset_reps_rowspace(self.h1)  # (k1, n1) if H1 full row rank
+        E2 = gf2_coset_reps_rowspace(self.h2)  # (k2, n2)
+
+        lz = np.zeros((self.k1 * self.k2, self.hz.shape[1]), dtype=np.uint8)
+        lx = np.zeros((self.k1 * self.k2, self.hx.shape[1]), dtype=np.uint8)
 
         cnt = 0
         for i in range(self.k2):
-            ei = np.zeros(self.h2.shape[1], dtype=int)
-            ei[i] = 1
             for j in range(self.k1):
-                ej = np.zeros(self.h1.shape[1], dtype=int)
-                ej[j] = 1
-
-                lz[cnt,:self.n1*self.n2] = np.kron(ei, self.l1[j,:])
-                lx[cnt,:self.n1*self.n2] = np.kron(self.l2[i,:], ej)
-
+                # Z: (E2_i ⊗ L1_j | 0)
+                lz[cnt, :self.n1 * self.n2] = np.kron(E2[i, :], self.l1[j, :]) & 1
+                # X: (L2_i ⊗ E1_j | 0)
+                lx[cnt, :self.n1 * self.n2] = np.kron(self.l2[i, :], E1[j, :]) & 1
                 cnt += 1
 
         return lz, lx

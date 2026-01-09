@@ -651,7 +651,7 @@ class BpcCode(QldpcCode):
                 xjgx_vec = np.tile(xjgx_vec, self.lift_size//self.factor)
 
                 prod = np.kron(yi_vec, xjgx_vec)
-                lz[(cnt + lz.shape[0]//2) % lz.shape[0],:] = np.concatenate((np.zeros(self.hz.shape[1]-len(prod), dtype=int), prod))
+                lz[cnt,:] = np.concatenate((np.zeros(self.hz.shape[1]-len(prod), dtype=int), prod))
                 lx[cnt,:] = np.concatenate((prod, np.zeros(self.hx.shape[1]-len(prod), dtype=int)))
 
                 cnt += 1
@@ -663,7 +663,7 @@ class BpcCode(QldpcCode):
                 xj_vec = np.tile(xj_vec, self.lift_size//self.factor)
 
                 prod = np.kron(yigy_vec, xj_vec)
-                lz[(cnt + lz.shape[0]//2) % lz.shape[0],:] = np.concatenate((prod, np.zeros(self.hz.shape[1]-len(prod), dtype=int)))
+                lz[cnt,:] = np.concatenate((prod, np.zeros(self.hz.shape[1]-len(prod), dtype=int)))
                 lx[cnt,:] = np.concatenate((np.zeros(self.hx.shape[1]-len(prod), dtype=int), prod))
                 
                 cnt += 1

@@ -11,7 +11,10 @@
 
 # QUITS: A modular Qldpc code circUIT Simulator
 
-QUITS is a modular and flexible circuit-level simulator for quantum low-density parity check (QLDPC) codes. Its design allows users to freely combine LDPC code constructions, syndrome extraction circuits, decoding algorithms, and noise models, enabling comprehensive and customizable studies of the performance of QLDPC codes under circuit-level noise. QUITS supports several leading QLDPC families, including hypergraph product codes, lifted product codes, and balanced product codes. 
+QUITS is a modular and flexible circuit-level simulator for quantum low-density parity check (QLDPC) codes. Its design allows users to freely combine LDPC code constructions, syndrome extraction circuits, decoding algorithms, and noise models, enabling comprehensive and customizable studies of the performance of QLDPC codes under circuit-level noise. QUITS supports several leading QLDPC families, including 
+- HyperGraph Product (HGP) codes 
+- Quasi-cyclic Lifted Product (QLP) codes, and 
+- Balanced Product Cyclic (BPC) codes. 
 
 Check out [arXiv:2504.02673](https://arxiv.org/abs/2504.02673) for a detailed description of our package. 
 

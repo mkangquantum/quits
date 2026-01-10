@@ -26,6 +26,9 @@ See [doc/intro.ipynb](https://github.com/mkangquantum/quits/blob/main/doc/intro.
 
 Since the release of QUITS, we acknowledge the feedback and suggestions from Ryan Tiew, Josias Old, and qodesign that helped improve the package. If you’re working on QLDPC codes, decoders, or noise modeling, it'd be great if you could try QUITS, file issues, or contribute features. Let’s build better tools for scalable, fault-tolerant quantum computing together ⚛️
 
+## License
+This project is licensed under the MIT License.
+
 ## Installation
 
 To install this package from GitHub, use the following steps:

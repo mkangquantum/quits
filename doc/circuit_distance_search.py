@@ -2,8 +2,7 @@
 # We do not encourage running this script on laptops, unless parameter dont_explore_edges _increasing_symptom_degree is set to True 
 # For BPC code [[144,8,12]], we requested 100G memory on Duke computer cluster.
 from quits.circuit import *
-from quits.simulation import get_stim_mem_result
-from quits.decoder import sliding_window_circuit_mem, detector_error_model_to_matrix
+from quits.decoder import detector_error_model_to_matrix
 from quits.qldpc_code import *
 import stim
 

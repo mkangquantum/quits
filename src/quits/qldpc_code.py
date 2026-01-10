@@ -6,9 +6,7 @@ import numpy as np
 import random
 import networkx as nx
 from scipy.linalg import circulant
-from ldpc.mod2.mod2_numpy import nullspace
-from .ldpc_utility import compute_lz_and_lx
-from .gf2_utility import *
+from .gf2_util import gf2_nullspace_basis, gf2_coset_reps_rowspace, compute_lz_and_lx, verify_css_logicals   
 
 # Parent class 
 class QldpcCode:
@@ -19,7 +17,10 @@ class QldpcCode:
 
         self.data_qubits, self.zcheck_qubits, self.xcheck_qubits = None, None, None
         self.check_qubits, self.all_qubits = None, None
-    
+
+    def verify_css_logicals(self):
+        return verify_css_logicals(self.hz, self.hx, self.lz, self.lx)
+
     def get_circulant_mat(self, size, power):
         return circulant(np.eye(size, dtype=int)[:,power])
 
@@ -187,14 +188,14 @@ class HgpCode(QldpcCode):
         self.hx = np.concatenate((np.kron(np.eye(self.n2, dtype=int), h1), 
                                   np.kron(h2.T, np.eye(self.r1, dtype=int))), axis=1)
         
-        self.l1 = nullspace(self.h1)
-        self.l2 = nullspace(self.h2)
+        self.l1 = gf2_nullspace_basis(self.h1)
+        self.l2 = gf2_nullspace_basis(self.h2)
         self.k1, self.k2 = self.l1.shape[0], self.l2.shape[0]
 
         if self.r1 == self.n1 - self.k1 and self.r2 == self.n2 - self.k2:   # If both classical parity check matrices are full-rank
             self.lz, self.lx = self.get_logicals()                          # set logical operators in the "canonical form"
         else:
-            self.lz, self.lx = compute_lz_and_lx(self.hx, self.hz)
+            self.lz, self.lx = compute_lz_and_lx(self.hz, self.hx)
 
     def get_logicals(self):
         """
@@ -327,7 +328,7 @@ class QlpCode(QldpcCode):
         
         self.hz = self.lift(self.lift_size, hz_base, hz_base_placeholder)
         self.hx = self.lift(self.lift_size, hx_base, hx_base_placeholder)
-        self.lz, self.lx = compute_lz_and_lx(self.hx, self.hz)
+        self.lz, self.lx = compute_lz_and_lx(self.hz, self.hx)
 
     def build_graph(self, seed=1):
 
@@ -481,7 +482,7 @@ class QlpCode2(QldpcCode):
         
         self.hz = self.lift_enc(self.lift_size, hz_base_enc, hz_base_placeholder)
         self.hx = self.lift_enc(self.lift_size, hx_base_enc, hx_base_placeholder)
-        self.lz, self.lx = compute_lz_and_lx(self.hx, self.hz)
+        self.lz, self.lx = compute_lz_and_lx(self.hz, self.hx)
 
     def build_graph(self, seed=1):
 
@@ -620,7 +621,7 @@ class BpcCode(QldpcCode):
 
         self.hz = np.concatenate((h2, h1T), axis=1)
         self.hx = np.concatenate((h1, h2T), axis=1)
-        self.lz, self.lx = compute_lz_and_lx(self.hx, self.hz)
+        self.lz, self.lx = compute_lz_and_lx(self.hz, self.hx)
         # self.lz, self.lx = self.get_logicals()    # logical operators in the "canonical form"
 
     def get_block_mat(self, power):

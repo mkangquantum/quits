@@ -31,18 +31,9 @@ This project is licensed under the MIT License.
 
 ## Installation
 
-To install this package from GitHub, use the following steps:
-
-1. **Clone the repository:**
+To install this package from GitHub, run installation command
    ```
-   git clone https://github.com/mkangquantum/quits.git
-   ```
-   
-2. **Navigate to the repository**
-
-3. **Run installation command**
-   ```
-   pip install -e .
+   pip install quits
    ```
 
 ## How to Cite Our Work

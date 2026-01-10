@@ -1,9 +1,83 @@
-*.pyc
-*.log
-*.egg-info
-.venv/*
-**/*.egg-info
+# ================================
+# Python bytecode / caches
+# ================================
+__pycache__/
+*.py[cod]
+*$py.class
 
-# Jupyter Notebook
+# ================================
+# Distribution / packaging
+# ================================
+build/
+dist/
+*.egg-info/
+**/*.egg-info
+.eggs/
+pip-wheel-metadata/
+
+# ================================
+# Virtual environments
+# ================================
+.venv/
+venv/
+ENV/
+env/
+.env/
+
+# ================================
+# Test / coverage
+# ================================
+.tox/
+.nox/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# ================================
+# Jupyter / IPython
+# ================================
 .ipynb_checkpoints
 **/*.ipynb_checkpoints/
+.profile_default/
+ipython_config.py
+
+# ================================
+# IDEs / editors
+# ================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*.bak
+
+# ================================
+# OS-specific
+# ================================
+.DS_Store
+Thumbs.db
+
+# ================================
+# Logs
+# ================================
+*.log
+
+# ================================
+# MyPy / type checking
+# ================================
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# ================================
+# Ruff / Pyright / Pyre
+# ================================
+.ruff_cache/
+.pyright/
+.pyre/
+
+# ================================
+# Temporary files
+# ================================
+*.tmp
+*.temp

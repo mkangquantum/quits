@@ -3,7 +3,7 @@ import numpy as np
 from quits.qldpc_code import BpcCode, HgpCode, QlpCode
 
 
-def test_hgp_code_intro_example():
+def test_hgp_code_example():
     h = np.loadtxt(
         "parity_check_matrices/n=12_dv=3_dc=4_dist=6.txt",
         dtype=int,
@@ -17,7 +17,7 @@ def test_hgp_code_intro_example():
     assert sum(code.num_colors.values()) == 8
 
 
-def test_qlp_code_intro_example():
+def test_qlp_code_example():
     lift_size = 16
     b = np.array(
         [
@@ -34,7 +34,7 @@ def test_qlp_code_intro_example():
     assert report["k_expected"] == code.lz.shape[0] == code.lx.shape[0]
 
 
-def test_bpc_code_intro_example():
+def test_bpc_code_example():
     lift_size, factor = 15, 3
     p1 = [0, 1, 5]
     p2 = [0, 8, 13]

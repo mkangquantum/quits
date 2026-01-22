@@ -1,78 +1,108 @@
-# This is the script that includes the parameters to explore effective distance. The results are given in our paper arXiv:2504.02673
-# We do not encourage running this script on laptops, unless parameter dont_explore_edges _increasing_symptom_degree is set to True 
-# For BPC code [[144,8,12]], we requested 100G memory on Duke computer cluster.
-from quits.circuit import *
-from quits.decoder import detector_error_model_to_matrix
-from quits.qldpc_code import *
+"""
+Circuit-distance search experiments (arXiv:2504.02673).
+
+This script builds a set of BPC codes, generates the corresponding memory
+circuits, and searches for undetectable logical errors using Stim.
+
+Warning:
+    Some configurations are very memory intensive. For the BPC [[144,8,12]]
+    example, we used ~100 GB RAM on a cluster. Use smaller search limits or
+    set `dont_explore_edges_increasing_symptom_degree=True` for laptops.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Iterable, Tuple
+
 import stim
 
-#[[72,8,8]]
-factor=3
-lift_size = 12
-p1=[0,1,5]
-p2=[0,1,8]
-
-code = BpcCode(p1, p2, lift_size, factor)  # Define the BpcCode object
-code.build_graph(seed=1)                   # Build the Tanner graph and assign directions to its edges.
-
-p = 2e-3           # physical error rate, does not matter in circuit distance search
-num_rounds = 2    # number of rounds (T-1)
-basis = 'Z'        
-
-circuit = stim.Circuit(get_qldpc_mem_circuit(code, p, p, p, p, num_rounds, basis=basis))
-model = circuit.detector_error_model(decompose_errors=False)
-detector_error_matrix, observables_matrix, priors= detector_error_model_to_matrix(model)
-
-err_list = circuit.search_for_undetectable_logical_errors(dont_explore_detection_event_sets_with_size_above=6,
-                                                     dont_explore_edges_with_degree_above=6,
-                                                     dont_explore_edges_increasing_symptom_degree=False) #Return a combination of error mechanisms that create a non detectable logical error
-#see also stim documentation: https://github.com/quantumlib/Stim/blob/main/doc/python_api_reference_vDev.md#stim.Circuit.search_for_undetectable_logical_errors
-
-print(len(err_list))
+from quits.circuit import get_qldpc_mem_circuit
+from quits.decoder import detector_error_model_to_matrix
+from quits.qldpc_code import BpcCode
 
 
-#[[90,8,10]]
-factor=3
-lift_size = 15
-p1=[0,1,5]
-p2=[0,2,7]
-
-code = BpcCode(p1, p2, lift_size, factor)  # Define the BpcCode object
-code.build_graph(seed=1)                   # Build the Tanner graph and assign directions to its edges.
-
-p = 2e-3           # physical error rate, does not matter in circuit distance search
-num_rounds = 2    # number of rounds (T-1)
-basis = 'Z'        
-
-circuit = stim.Circuit(get_qldpc_mem_circuit(code, p, p, p, p, num_rounds, basis=basis))
-model = circuit.detector_error_model(decompose_errors=False)
-detector_error_matrix, observables_matrix, priors= detector_error_model_to_matrix(model)
-
-err_list = circuit.search_for_undetectable_logical_errors(dont_explore_detection_event_sets_with_size_above=6,
-                                                     dont_explore_edges_with_degree_above=6,
-                                                     dont_explore_edges_increasing_symptom_degree=False) #Return a combination of error mechanisms that create a non detectable logical error
-
-print(len(err_list))
+@dataclass(frozen=True)
+class SearchConfig:
+    label: str
+    factor: int
+    lift_size: int
+    p1: Tuple[int, ...]
+    p2: Tuple[int, ...]
+    num_rounds: int
+    basis: str = "Z"
+    seed: int = 1
 
 
-#[[144,8,12]]
-factor=3
-lift_size = 24
-p1=[0,1,5]
-p2=[0,1,11]
+def _build_bpc_code(cfg: SearchConfig) -> BpcCode:
+    code = BpcCode(list(cfg.p1), list(cfg.p2), cfg.lift_size, cfg.factor)
+    code.build_graph(seed=cfg.seed)
+    return code
 
-code = BpcCode(p1, p2, lift_size, factor)  # Define the BpcCode object
-code.build_graph(seed=1)                   # Build the Tanner graph and assign directions to its edges.
 
-p = 2e-3           # physical error rate, does not matter in circuit distance search
-num_rounds = 1    # number of rounds (T-1)
-basis = 'Z'        
+def _build_circuit(code: BpcCode, num_rounds: int, basis: str) -> stim.Circuit:
+    # Physical error rate does not affect circuit-distance search.
+    p = 2e-3
+    return stim.Circuit(get_qldpc_mem_circuit(code, p, p, p, p, num_rounds, basis=basis))
 
-circuit = stim.Circuit(get_qldpc_mem_circuit(code, p, p, p, p, num_rounds, basis=basis))
-model = circuit.detector_error_model(decompose_errors=False)
-detector_error_matrix, observables_matrix, priors= detector_error_model_to_matrix(model)
 
-err_list = circuit.search_for_undetectable_logical_errors(dont_explore_detection_event_sets_with_size_above=6,
-                                                     dont_explore_edges_with_degree_above=6,
-                                                     dont_explore_edges_increasing_symptom_degree=False) #Return a combination of error mechanisms that create a non detectable logical error
-print(len(err_list))
+def run_distance_search(
+    cfg: SearchConfig,
+    *,
+    dont_explore_detection_event_sets_with_size_above: int = 6,
+    dont_explore_edges_with_degree_above: int = 6,
+    dont_explore_edges_increasing_symptom_degree: bool = False,
+) -> int:
+    code = _build_bpc_code(cfg)
+    circuit = _build_circuit(code, cfg.num_rounds, cfg.basis)
+
+    model = circuit.detector_error_model(decompose_errors=False)
+    detector_error_model_to_matrix(model)
+
+    err_list = circuit.search_for_undetectable_logical_errors(
+        dont_explore_detection_event_sets_with_size_above=(
+            dont_explore_detection_event_sets_with_size_above
+        ),
+        dont_explore_edges_with_degree_above=dont_explore_edges_with_degree_above,
+        dont_explore_edges_increasing_symptom_degree=(
+            dont_explore_edges_increasing_symptom_degree
+        ),
+    )
+    return len(err_list)
+
+
+def iter_configs() -> Iterable[SearchConfig]:
+    yield SearchConfig(
+        label="[[72,8,8]]",
+        factor=3,
+        lift_size=12,
+        p1=(0, 1, 5),
+        p2=(0, 1, 8),
+        num_rounds=2,
+    )
+    # yield SearchConfig(
+    #     label="[[90,8,10]]",
+    #     factor=3,
+    #     lift_size=15,
+    #     p1=(0, 1, 5),
+    #     p2=(0, 2, 7),
+    #     num_rounds=2,
+    # )
+    # yield SearchConfig(
+    #     label="[[144,8,12]]",
+    #     factor=3,
+    #     lift_size=24,
+    #     p1=(0, 1, 5),
+    #     p2=(0, 1, 11),
+    #     num_rounds=1,
+    # )
+
+
+def main() -> None:
+    for cfg in iter_configs():
+        count = run_distance_search(cfg)
+        print(cfg.label, count)
+
+
+if __name__ == "__main__":
+    main()

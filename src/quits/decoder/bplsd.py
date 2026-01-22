@@ -7,7 +7,7 @@ from ldpc.bplsd_decoder import BpLsdDecoder
 from .sliding_window import sliding_window_phenom_mem, sliding_window_circuit_mem
 
 
-def sliding_window_bplsd_phenom_mem(zcheck_samples, hz, lz, W, F, error_rate: float, max_iter=2, lsd_order=0, bp_method='product_sum', schedule='serial', lsd_method='lsd_cs', tqdm_on=False):
+def sliding_window_bplsd_phenom_mem(zcheck_samples, hz, lz, W, F, eff_error_rate_per_fault: float = None, max_iter=2, lsd_order=0, bp_method='product_sum', schedule='serial', lsd_method='lsd_cs', tqdm_on=False, error_rate: float = None):
     '''
     Sliding window decoder in S. Huang and S. Puri, PRA 110, 012453 (2024) implemented with BP-LSD decoder
     For convenience the notation assumes z-type memory, but the code works equivalently for x-type memory.
@@ -17,7 +17,8 @@ def sliding_window_bplsd_phenom_mem(zcheck_samples, hz, lz, W, F, error_rate: fl
     :param lz: Logical codeword matrix of the qec code. Shape ((# logical qubits, # data qubits))
     :param W: Width of sliding window
     :param F: Width of overlap between consecutive sliding windows
-    :param error_rate: Estimate of error rate in the context of code-capacity/phenomenological level simulations.
+    :param eff_error_rate_per_fault: Estimate of error rate in the context of code-capacity/phenomenological level simulations.
+    :param error_rate: Deprecated alias for eff_error_rate_per_fault.
                 For circuit level, we suggest p * (num_layers + 3), where p is the depolarizing error rate
                 and num_layers is the circuit depth for each stabilizer measurement round
                 e.g. for hgp codes, num_layers == code.count_color('east') + code.count_color('north') + code.count_color('south') + code.count_color('west')
@@ -29,19 +30,23 @@ def sliding_window_bplsd_phenom_mem(zcheck_samples, hz, lz, W, F, error_rate: fl
 
     :return logical_z_pred: Decoder's prediction of whether the logical Z codewords flipped. Shape (# trials, # logical quits)
     '''
+    if eff_error_rate_per_fault is None:
+        eff_error_rate_per_fault = error_rate
+    if eff_error_rate_per_fault is None:
+        raise ValueError("eff_error_rate_per_fault must be provided (or use deprecated error_rate).")
     # parameters of decoders
     dict1 = {'bp_method': bp_method,
             'max_iter': max_iter,
             'schedule': schedule,
             'lsd_method': lsd_method,
             'lsd_order': lsd_order,
-          'error_rate': float(error_rate)}
+          'error_rate': float(eff_error_rate_per_fault)}
     dict2 = {'bp_method': bp_method,
             'max_iter': max_iter,
             'schedule': schedule,
             'lsd_method': lsd_method,
             'lsd_order': lsd_order,
-          'error_rate': float(error_rate)}
+          'error_rate': float(eff_error_rate_per_fault)}
     logical_pred = sliding_window_phenom_mem(zcheck_samples, hz, lz, W, F, BpLsdDecoder, BpLsdDecoder, dict1, dict2, 'decode', 'decode', tqdm_on=tqdm_on)
     return logical_pred
 

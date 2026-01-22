@@ -30,7 +30,7 @@ def sliding_window_phenom_mem(zcheck_samples, hz, lz, W, F, decoder1, decoder2, 
     :param dict2: parameters of decoder2, except for the parity check matrix
     :param function_name1: the decoding function name of decoder1 that is called to decode a syndrome after the initialization of the decoder1
     :param function_name2: the decoding function of decoder1 that is called to decode a syndrome after the initialization of the decoder2
-    :param error_rate: Estimate of error rate in the context of code-capacity/phenomenological level simulations.
+    :param eff_error_rate_per_fault: Estimate of error rate in the context of code-capacity/phenomenological level simulations.
                 For circuit level, we suggest p * (num_layers + 3), where p is the depolarizing error rate
                 and num_layers is the circuit depth for each stabilizer measurement round
                 e.g. for hgp codes, num_layers == code.count_color('east') + code.count_color('north') + code.count_color('south') + code.count_color('west')

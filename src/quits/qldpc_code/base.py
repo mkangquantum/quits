@@ -2,6 +2,8 @@
 @author: Mingyu Kang, Yingjia Lin
 """
 
+import warnings
+
 import numpy as np
 from scipy.linalg import circulant
 from ..gf2_util import verify_css_logicals
@@ -74,6 +76,11 @@ class QldpcCode:
         return builder.build(self, **opts)
 
     def build_graph(self, **opts):
+        warnings.warn(
+            "QldpcCode.build_graph is deprecated; use build_circuit(strategy='cardinal', ...) instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self.build_circuit(strategy="cardinal", **opts)
 
     # Helper function for assigning bool to each edge of the classical code's parity check matrix

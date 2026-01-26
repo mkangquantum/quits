@@ -36,7 +36,7 @@ class SearchConfig:
 
 def _build_bpc_code(cfg: SearchConfig) -> BpcCode:
     code = BpcCode(list(cfg.p1), list(cfg.p2), cfg.lift_size, cfg.factor)
-    code.build_graph(seed=cfg.seed)
+    code.build_circuit(seed=cfg.seed)
     return code
 
 
@@ -106,3 +106,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

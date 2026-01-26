@@ -39,7 +39,7 @@ def _bp_osd_params(max_iter, osd_order):
 
 
 def _run_sliding_window_phenom(code, code_name, p, num_rounds, num_trials, W, F, max_iter, osd_order, seed=1):
-    code.build_graph(seed=seed)
+    code.build_circuit(strategy="cardinal", seed=seed)
     report = code.verify_css_logicals()
     print(f"{code_name} verify_css_logicals", report)
     assert report["ok"]

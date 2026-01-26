@@ -13,7 +13,7 @@ def _build_hgp_code(seed=22):
         dtype=int,
     )
     code = HgpCode(h, h)
-    code.build_graph(seed=seed)
+    code.build_circuit(strategy="cardinal", seed=seed)
     return code
 
 

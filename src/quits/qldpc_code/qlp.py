@@ -136,7 +136,7 @@ class QlpCode(QldpcCode):
         return
 
 
-class QlpCode2(QldpcCode):
+class QlpPolyCode(QldpcCode):
     def __init__(self, b1, b2, lift_size):
         '''
         :param b1: First base matrix used to construct the lp code. Each entry is the list of powers of the polynomial terms.
@@ -297,4 +297,4 @@ class QlpCode2(QldpcCode):
         return
 
 
-__all__ = ["QlpCode", "QlpCode2"]
+__all__ = ["QlpCode", "QlpPolyCode"]

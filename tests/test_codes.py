@@ -4,7 +4,7 @@ from ldpc.bposd_decoder import BpOsdDecoder
 
 from quits.circuit import get_qldpc_mem_circuit
 from quits.decoder.sliding_window import sliding_window_phenom_mem
-from quits.qldpc_code import BpcCode, HgpCode, QlpCode
+from quits.qldpc_code import BpcCode, HgpCode, LscCode, QlpCode
 from quits.simulation import get_stim_mem_result
 
 
@@ -163,6 +163,38 @@ def test_bpc_code_circuit_phenom_low_lfr():
 
     depth, eff_error_rate_per_fault, pL, lfr = _run_sliding_window_phenom(code, "BPC", **params)
     _print_results("BPC", params, depth, eff_error_rate_per_fault, pL, lfr)
+    print()
+
+    assert pL <= 0.3
+    assert lfr <= 0.1
+
+
+def test_lsc_code_circuit_phenom_low_lfr():
+    lift_size = 5
+    length = 3  # length = l + 1
+    code = LscCode(lift_size, length)
+
+    expected_b = np.array(
+        [
+            [[0], [0, 1], []],
+            [[], [0], [0, 1]],
+        ],
+        dtype=object,
+    )
+    assert (code.b == expected_b).all()
+
+    params = {
+        "p": 1e-3,
+        "num_rounds": 15,
+        "num_trials": 50,
+        "W": 5,
+        "F": 3,
+        "max_iter": 10,
+        "osd_order": 1,
+    }
+
+    depth, eff_error_rate_per_fault, pL, lfr = _run_sliding_window_phenom(code, "LSC", **params, seed=1)
+    _print_results("LSC", params, depth, eff_error_rate_per_fault, pL, lfr)
     print()
 
     assert pL <= 0.3

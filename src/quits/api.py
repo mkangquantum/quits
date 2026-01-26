@@ -10,7 +10,7 @@ from .decoder import (
     sliding_window_circuit_mem,
     sliding_window_phenom_mem,
 )
-from .qldpc_code import BpcCode, HgpCode, QldpcCode, QlpCode, QlpCode2
+from .qldpc_code import BpcCode, HgpCode, LscCode, QldpcCode, QlpCode, QlpPolyCode
 from .simulation import get_stim_mem_result
 
 __all__ = [
@@ -18,7 +18,8 @@ __all__ = [
     "HgpCode",
     "QldpcCode",
     "QlpCode",
-    "QlpCode2",
+    "QlpPolyCode",
+    "LscCode",
     "get_qldpc_mem_circuit",
     "get_stim_mem_result",
     "detector_error_model_to_matrix",

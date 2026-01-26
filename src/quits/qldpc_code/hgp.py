@@ -3,6 +3,8 @@
 """
 
 import numpy as np
+
+from .circuit_construction import get_builder
 from ..gf2_util import gf2_nullspace_basis, gf2_coset_reps_rowspace, compute_lz_and_lx
 from .base import QldpcCode
 
@@ -56,9 +58,13 @@ class HgpCode(QldpcCode):
 
         return lz, lx
 
-    def build_graph(self, seed=1):
+    def build_circuit(self, strategy="cardinal", **opts):
+        if strategy != "cardinal":
+            return super().build_circuit(strategy=strategy, **opts)
+        return self._build_cardinal_graph(**opts)
 
-        super().build_graph()
+    def _build_cardinal_graph(self, seed=1):
+        get_builder("cardinal").build_graph(self)
         data_qubits, zcheck_qubits, xcheck_qubits = [], [], []
 
         # Add nodes to the Tanner graph

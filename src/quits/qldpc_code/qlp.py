@@ -3,6 +3,8 @@
 """
 
 import numpy as np
+
+from .circuit_construction import get_builder
 from ..gf2_util import compute_lz_and_lx
 from .base import QldpcCode
 
@@ -40,9 +42,13 @@ class QlpCode(QldpcCode):
         self.hx = self.lift(self.lift_size, hx_base, hx_base_placeholder)
         self.lz, self.lx = compute_lz_and_lx(self.hz, self.hx)
 
-    def build_graph(self, seed=1):
+    def build_circuit(self, strategy="cardinal", **opts):
+        if strategy != "cardinal":
+            return super().build_circuit(strategy=strategy, **opts)
+        return self._build_cardinal_graph(**opts)
 
-        super().build_graph()
+    def _build_cardinal_graph(self, seed=1):
+        get_builder("cardinal").build_graph(self)
         data_qubits, zcheck_qubits, xcheck_qubits = [], [], []
 
         # Add nodes to the Tanner graph
@@ -193,9 +199,13 @@ class QlpCode2(QldpcCode):
         self.hx = self.lift_enc(self.lift_size, hx_base_enc, hx_base_placeholder)
         self.lz, self.lx = compute_lz_and_lx(self.hz, self.hx)
 
-    def build_graph(self, seed=1):
+    def build_circuit(self, strategy="cardinal", **opts):
+        if strategy != "cardinal":
+            return super().build_circuit(strategy=strategy, **opts)
+        return self._build_cardinal_graph(**opts)
 
-        super().build_graph()
+    def _build_cardinal_graph(self, seed=1):
+        get_builder("cardinal").build_graph(self)
         data_qubits, zcheck_qubits, xcheck_qubits = [], [], []
 
         # Add nodes to the Tanner graph

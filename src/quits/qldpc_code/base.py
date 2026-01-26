@@ -3,10 +3,9 @@
 """
 
 import numpy as np
-import random
-import networkx as nx
 from scipy.linalg import circulant
 from ..gf2_util import verify_css_logicals
+from .circuit_construction import get_builder
 
 
 class QldpcCode:
@@ -67,113 +66,29 @@ class QldpcCode:
 
     # Draw the Tanner graph of the code.
     def draw_graph(self, draw_edges=True):
+        builder = get_builder("cardinal")
+        return builder.draw_graph(self, draw_edges=draw_edges)
 
-        pos = nx.get_node_attributes(self.graph, 'pos')
-        if not draw_edges:
-            nx.draw(self.graph, pos, node_color=self.node_colors, with_labels=True, font_color='white')
-            return
+    def build_circuit(self, strategy="cardinal", **opts):
+        builder = get_builder(strategy)
+        return builder.build(self, **opts)
 
-        edges = self.graph.edges()
-        edge_colors = [self.graph[u][v]['color'] for u, v in edges]
-        self.graph.add_edges_from(edges)
-        nx.draw(self.graph, pos, node_color=self.node_colors, edge_color=edge_colors, with_labels=True, font_color='white')
-        return
-
-    def build_graph(self):
-
-        self.graph = nx.Graph()
-        self.direction_inds = {'E': 0, 'N': 1, 'S': 2, 'W': 3}
-        self.direction_colors = ['green', 'blue', 'orange', 'red']
-
-        self.node_colors = []  # 'blue' for data qubits, 'green' for zcheck qubits, 'purple' for xcheck qubits
-        self.edges = [[] for i in range(len(self.direction_inds))]  # edges of the Tanner graph of each direction
-
-        self.rev_dics = [{} for i in range(len(self.direction_inds))]  # dictionaries used to efficiently construct the reversed Tanner graph for each direction
-        self.rev_nodes = [[] for i in range(len(self.direction_inds))]  # nodes of the reversed Tanner graph of each direction
-        self.rev_edges = [[] for i in range(len(self.direction_inds))]  # edges of the reversed Tanner graph of each direction.
-        self.colored_edges = [{} for i in range(len(self.direction_inds))]  # for each direction, dictionary's key is the color, values are the edges
-        self.num_colors = {direction: 0 for direction in self.direction_inds.keys()}
-        return
+    def build_graph(self, **opts):
+        return self.build_circuit(strategy="cardinal", **opts)
 
     # Helper function for assigning bool to each edge of the classical code's parity check matrix
     def get_classical_edge_bools(self, h, seed):
-
-        c0_scores = {}
-        c1_scores = {}
-        edge_signs = {}
-        random.seed(seed)
-
-        for edge in np.argwhere(h == 1):
-            c0, c1 = edge
-            c0_score = c0_scores.get(c0, 0)
-            c1_score = c1_scores.get(c1, 0)
-
-            p = random.random()
-            tf = c0_score + c1_score > 0 or (c0_score + c1_score == 0 and p >= 0.5)
-            sign = int(tf) * 2 - 1
-            edge_signs[(c0, c1)] = tf
-            c0_scores[c0] = c0_scores.get(c0, 0) - sign
-            c1_scores[c1] = c1_scores.get(c1, 0) - sign
-
-        return edge_signs
+        builder = get_builder("cardinal")
+        return builder.get_classical_edge_bools(h, seed)
 
     # Helper function for adding edges
     def add_edge(self, edge_no, direction_ind, control, target):
-
-        self.edges[direction_ind] += [(control, target)]
-        self.graph.add_edge(control, target, color=self.direction_colors[direction_ind])
-
-        # add edge to rev graph
-        self.rev_nodes[direction_ind] += [edge_no]
-        if control not in self.rev_dics[direction_ind]:
-            self.rev_dics[direction_ind][control] = [edge_no]
-        else:
-            self.rev_dics[direction_ind][control] += [edge_no]
-        if target not in self.rev_dics[direction_ind]:
-            self.rev_dics[direction_ind][target] = [edge_no]
-        else:
-            self.rev_dics[direction_ind][target] += [edge_no]
-        return
+        builder = get_builder("cardinal")
+        return builder.add_edge(self, edge_no, direction_ind, control, target)
 
     def color_edges(self):
-        # Construct the reversed Tanner graph's edges from rev_dics dictionary
-        for direction_ind in range(len(self.rev_edges)):
-            dic = self.rev_dics[direction_ind]
-            for nodes in dic.values():
-                for i in range(len(nodes) - 1):
-                    for j in range(i + 1, len(nodes)):
-                        self.rev_edges[direction_ind] += [(nodes[i], nodes[j])]
-
-        edge_colors = [[] for i in range(len(self.direction_inds))]  # list of colors of the reversed Tanner graph's nodes for each direction
-        # Apply coloring to the reversed Tanner graph
-        for direction_ind in range(len(self.rev_edges)):
-            rev_graph = nx.Graph()
-            rev_graph.add_nodes_from(self.rev_nodes[direction_ind])
-            rev_graph.add_edges_from(self.rev_edges[direction_ind])
-
-            edge_coloration = nx.greedy_color(rev_graph)
-            # Somehow the dictionary returned by nx.greedy_color shuffles the keys (rev_nodes[direction_ind])
-            # so the values (colors) need to be shuffled correctly.
-            paired = list(zip(edge_coloration.keys(), edge_coloration.values()))
-            paired_sorted = sorted(paired, key=lambda x: x[0])
-            _, reordered_colors = zip(*paired_sorted)
-            edge_colors[direction_ind] = reordered_colors
-
-        # Construct colored_edges (dictionary of edges of each direction and color)
-        for direction_ind in range(len(self.colored_edges)):
-            for i in range(len(self.edges[direction_ind])):
-                edge = list(self.edges[direction_ind][i])
-                color = edge_colors[direction_ind][i]
-
-                if color not in self.colored_edges[direction_ind]:
-                    self.colored_edges[direction_ind][color] = edge
-                else:
-                    self.colored_edges[direction_ind][color] += edge
-
-        for direction in list(self.direction_inds.keys()):
-            direction_ind = self.direction_inds[direction]
-            self.num_colors[direction] = len(list(self.colored_edges[direction_ind].keys()))
-        return
+        builder = get_builder("cardinal")
+        return builder.color_edges(self)
 
 
 __all__ = ["QldpcCode"]

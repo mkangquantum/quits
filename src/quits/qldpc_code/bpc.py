@@ -19,6 +19,8 @@ class BpcCode(QldpcCode):
         :param factor: Power of the monomial generator of the cyclic subgroup that is factored out by the balanced product.
                        e.g. if factor == 3, cyclic subgroup <x^3> is factored out.
         '''
+        # Reference: R. Tiew & N. P. Breuckmann, arXiv:2411.03302 (balanced product cyclic codes).
+        # Note: To match the paper, p2 should use lift_size minus the powers listed there (transpose convention).
         super().__init__()
 
         self.p1, self.p2 = p1, p2

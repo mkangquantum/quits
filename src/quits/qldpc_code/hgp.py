@@ -15,6 +15,8 @@ class HgpCode(QldpcCode):
         :param h1: Parity check matrix of the first classical code used to construct the hgp code
         :param h2: Parity check matrix of the second classical code used to construct the hgp code
         '''
+        # Reference: Tillich & Zemor, arXiv:0903.0566 (hypergraph product codes).
+        # Canonical logicals follow the HGP convention in arXiv:2204.10812.
         super().__init__()
 
         self.h1, self.h2 = h1, h2

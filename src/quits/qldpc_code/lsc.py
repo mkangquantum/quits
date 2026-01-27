@@ -21,6 +21,7 @@ class LscCode(QlpPolyCode):
         :param lift_size: L, circulant lift size.
         :param length: l + 1, number of columns in the base matrix.
         """
+        # Reference: J. Old, M. Rispler, and M. Muller, arXiv:2401.02911 (lift-connected surface codes).
         if length < 2:
             raise ValueError("length must be at least 2 so that l = length - 1 is positive.")
 

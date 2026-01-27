@@ -17,6 +17,7 @@ class QlpCode(QldpcCode):
         :param b2: Second base matrix used to construct the lp code. Each entry is the power of the monomial.
         :param lift_size: Size of cyclic matrix to which each monomial entry is lifted.
         '''
+        # Reference base matrices: Q. Xu et al., arXiv:2308.08648 (quasi-cyclic lifted product codes).
         super().__init__()
 
         self.b1, self.b2 = b1, b2
@@ -144,6 +145,7 @@ class QlpPolyCode(QldpcCode):
         :param b2: Second base matrix used to construct the lp code. Each entry is the list of powers of the polynomial terms.
         :param lift_size: Size of cyclic matrix to which each polynomial term is lifted.
         '''
+        # Polynomial-entry variant used for lift-connected surface codes; see Old, Rispler, Muller (arXiv:2401.02911).
         super().__init__()
 
         self.b1, self.b2 = b1, b2

@@ -1,15 +1,18 @@
-# Refactor Plan (No External API Changes)
+# Refactor Plan (Updated with Completed Changes)
 
-This plan proposes a structural refactor that keeps the public API stable while improving internal modularity and organization.
+This plan captures the key refactors and API changes implemented so far.
 
-## Goals
+## Summary of Key Revisions
 
-- Preserve existing import paths and public functions/classes.
-- Improve maintainability by splitting large modules into focused submodules.
-- Add an internal facade layer to provide stable re-exports.
-- Keep all current behavior and signatures intact.
+- Added modular circuit-construction strategies under `qldpc_code/circuit_construction/`.
+- Introduced `build_circuit(...)` as the primary entrypoint, with `build_graph(...)` retained only as a deprecated wrapper.
+- Added new code family: Lift-connected surface code (`LscCode`) and tests.
+- Renamed `QlpCode2` to `QlpPolyCode` and updated exports/usages.
+- Updated tests and notebooks to use `build_circuit` instead of `build_graph`.
+- Added canonical logical controls and verbose logging for HGP/BPC.
+- Adjusted CSS logical verification criteria and pairing checks.
 
-## Proposed Target Layout
+## Current Target Layout
 
 ```
 src/quits/
@@ -28,69 +31,62 @@ src/quits/
     hgp.py
     qlp.py
     bpc.py
+    lsc.py
+    circuit_construction/
+      __init__.py
+      base.py
+      cardinal.py
+      xzcoloration.py
+      freeform.py
   gf2_util.py
   ldpc_util.py
   simulation.py
 ```
 
-Notes:
-- `gf2_util.py` and `ldpc_util.py` remain in place to preserve current imports.
-- New `decoder/` and `qldpc_code/` packages hold the refactored implementations.
-- `api.py` (or `__init__.py`) becomes the stable user-facing entry point.
+## Implemented Changes (Details)
 
-## Detailed Steps
+### Circuit construction modularity
+- Added `qldpc_code/circuit_construction/` with a strategy registry and base interface.
+- Implemented `CardinalBuilder`; added placeholders for `XZColorationBuilder` and `FreeformBuilder`.
+- Moved cardinal graph-building helpers into `CardinalBuilder`.
+- `QldpcCode.build_circuit()` delegates to the selected builder.
+- `build_graph()` now warns via `DeprecationWarning` and calls `build_circuit(strategy="cardinal", ...)`.
 
-### 1. Add a facade API layer
+### Code-family updates
+- `HgpCode`, `QlpCode`, `QlpPolyCode`, and `BpcCode` override `build_circuit(...)` for the cardinal strategy.
+- `QlpCode2` renamed to `QlpPolyCode` (exports updated in `qldpc_code/__init__.py` and `api.py`).
+- Added `LscCode` in `qldpc_code/lsc.py`, parameterized by `lift_size` (L) and `length` (l+1).
 
-- Create `src/quits/api.py` with re-exports of the most commonly used classes and functions.
-- Update `src/quits/__init__.py` to import and re-export from `api.py`.
-- This allows internal module changes without affecting user imports.
+### Canonical logicals + verbose mode
+- `HgpCode` and `BpcCode` accept `verbose`; print when canonical logicals are used.
+- `HgpCode.get_logicals` renamed to `get_canonical_logicals`.
+- `BpcCode.get_logicals` renamed to `get_canonical_logicals`.
+- `BpcCode` canonical logicals now:
+  - Mix Z logicals (default) to enforce weight 2*q.
+  - Re-pair LX/LZ to make pairing identity.
+  - Optionally swap to make X logicals weight 2*q (`canonical_weight="x"`).
 
-### 2. Refactor `qldpc_code.py` into a package
+### CSS logical verification
+- `verify_css_logicals` now computes pairing using overlap parity (mod 2).
+- `pairing_is_identity` is required for `report["ok"]`.
+- Style updated to store `pairing_is_identity` in a local variable like other checks.
 
-- Create `src/quits/qldpc_code/` package.
-- Move the existing `QldpcCode` base class and shared helpers into `qldpc_code/base.py`.
-- Move concrete code families into separate files:
-  - `qldpc_code/hgp.py`
-  - `qldpc_code/qlp.py`
-  - `qldpc_code/bpc.py`
-- Add `qldpc_code/__init__.py` to re-export public classes.
-- Keep `src/quits/qldpc_code.py` as a thin compatibility shim that re-exports from the new package.
+### Tests and docs
+- Tests now call `build_circuit(...)` (including `tests/test_codes.py`, `tests/test_circuit.py`, etc.).
+- Added `LscCode` test inside `tests/test_codes.py`.
+- Notebooks updated:
+  - All `build_graph` → `build_circuit` in docs.
+  - `01_codes_basics.ipynb` includes canonical-logicals explanation + print cells for HGP/BPC.
+  - `old_intro.ipynb` updated to `QlpPolyCode`.
+- `doc/circuit_distance_search.py` updated to `build_circuit`.
 
-### 3. Refactor `decoder.py` into a package
+## Compatibility Strategy (Current)
 
-- Create `src/quits/decoder/` package.
-- Extract shared interfaces into `decoder/base.py` (e.g., `DecoderProtocol`, configs).
-- Extract decoder integrations into separate files:
-  - `decoder/bposd.py`
-  - `decoder/bplsd.py`
-- Move the sliding-window algorithm into `decoder/sliding_window.py`.
-- Add `decoder/__init__.py` to re-export public APIs.
-- Keep `src/quits/decoder.py` as a thin compatibility shim that re-exports from the new package.
+- `build_graph` still exists as a deprecated wrapper to avoid immediate breakage.
+- Public imports are maintained via `qldpc_code/__init__.py` and `api.py`.
 
-### 4. Consolidate high-level imports
+## Suggested Next Steps
 
-- Keep all legacy imports working by:
-  - Preserving existing module filenames as re-export shims.
-  - Using `__all__` and explicit exports in new packages.
-- Ensure all current import paths still work (e.g., `from quits.decoder import sliding_window_phenom_mem`).
-
-## Compatibility Strategy
-
-- Use thin shim modules (`qldpc_code.py`, `decoder.py`) that import from the new package and re-export names.
-- Avoid renaming public functions or changing signatures.
-- Include smoke tests to verify old import paths.
-
-## Suggested Verification (Non-Exhaustive)
-
-- `python -c "from quits.qldpc_code import QldpcCode"`
-- `python -c "from quits.decoder import sliding_window_phenom_mem"`
-- `python -c "from quits import QldpcCode"` (after adding `api.py`/`__init__.py` re-exports)
-
-## Rollout Notes
-
-- Refactor in small steps to reduce risk:
-  1. Add new package skeletons + re-exports.
-  2. Move code incrementally per module.
-  3. Remove duplication once re-exports are stable.
-- Update docs to point to the new preferred imports, while maintaining backwards compatibility.
+- Implement `XZColorationBuilder` and `FreeformBuilder`.
+- Optionally add a small helper to compute full pairing matrices for diagnostics.
+- Consider deprecating/removing `build_graph` after a transition period.

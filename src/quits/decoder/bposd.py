@@ -1,0 +1,89 @@
+"""
+@author: Yingjia Lin
+"""
+
+from ldpc.bposd_decoder import BpOsdDecoder
+
+from .sliding_window import sliding_window_phenom_mem, sliding_window_circuit_mem
+
+
+def sliding_window_bposd_phenom_mem(zcheck_samples, hz, lz, W, F, eff_error_rate_per_fault: float = None, max_iter=2, osd_order=0, bp_method='product_sum', schedule='serial', osd_method='osd_cs', tqdm_on=False, error_rate: float = None):
+    '''
+    Sliding window decoder in S. Huang and S. Puri, PRA 110, 012453 (2024) implemented with BP-OSD decoder
+    For convenience the notation assumes z-type memory, but the code works equivalently for x-type memory.
+
+    :param zcheck_samples: 2-dim numpy array of detector results; see get_stim_Zmem_result in simulation.py. Shape (# trials, # Z-check qubits * (# rounds+1))
+    :param hz: Parity check matrix (in the code-capacity level) representing the Z stabilizers of the qec code. Shape ((# Z-check qubits, # data qubits))
+    :param lz: Logical codeword matrix of the qec code. Shape ((# logical qubits, # data qubits))
+    :param W: Width of sliding window
+    :param F: Width of overlap between consecutive sliding windows
+    :param eff_error_rate_per_fault: Estimate of error rate in the context of code-capacity/phenomenological level simulations.
+    :param error_rate: Deprecated alias for eff_error_rate_per_fault.
+                For circuit level, we suggest p * (num_layers + 3), where p is the depolarizing error rate
+                and num_layers is the circuit depth for each stabilizer measurement round
+                e.g. for hgp codes, num_layers == code.count_color('east') + code.count_color('north') + code.count_color('south') + code.count_color('west')
+    :param max_iter: Maximum number of iterations for BP
+    :param osd_order: Osd search depth
+    :param bp_method: BP method for BP_OSD. Choose from ‘product_sum’ or ‘minimum_sum’
+    :param schedule: choose from 'serial' or 'parallel'
+    :param osd_method: choose from:  'osd_e', 'osd_cs', 'osd_0'
+
+    :return logical_z_pred: Decoder's prediction of whether the logical Z codewords flipped. Shape (# trials, # logical quits)
+    '''
+    if eff_error_rate_per_fault is None:
+        eff_error_rate_per_fault = error_rate
+    if eff_error_rate_per_fault is None:
+        raise ValueError("eff_error_rate_per_fault must be provided (or use deprecated error_rate).")
+    # parameters of decoders
+    dict1 = {'bp_method': bp_method,
+            'max_iter': max_iter,
+            'schedule': schedule,
+            'osd_method': osd_method,
+            'osd_order': osd_order,
+          'error_rate': float(eff_error_rate_per_fault)}
+    dict2 = {'bp_method': bp_method,
+            'max_iter': max_iter,
+            'schedule': schedule,
+            'osd_method': osd_method,
+            'osd_order': osd_order,
+          'error_rate': float(eff_error_rate_per_fault)}
+    logical_pred = sliding_window_phenom_mem(zcheck_samples, hz, lz, W, F, BpOsdDecoder, BpOsdDecoder, dict1, dict2, 'decode', 'decode', tqdm_on=tqdm_on)
+    return logical_pred
+
+
+def sliding_window_bposd_circuit_mem(zcheck_samples, circuit, hz, lz, W, F, max_iter=2, osd_order=0, bp_method='product_sum', schedule='serial', osd_method='osd_cs', tqdm_on=False):
+    '''
+    Sliding window decoder in S. Huang and S. Puri, PRA 110, 012453 (2024) implemented with BP-OSD decoder and spacetime detector error matrix
+    For convenience the notation assumes z-type memory, but the code works equivalently for x-type memory.
+
+    :param zcheck_samples: 2-dim numpy array of detector results; see get_stim_Zmem_result in simulation.py. Shape (# trials, # Z-check qubits * (# rounds+1))
+    :param circuit: syndrome extraction circuit
+    :param hz: Parity check matrix (in the code-capacity level) representing the Z stabilizers of the qec code. Shape ((# Z-check qubits, # data qubits))
+    :param lz: Logical codeword matrix of the qec code. Shape ((# logical qubits, # data qubits))
+    :param W: Width of sliding window
+    :param F: Width of overlap between consecutive sliding windows
+    :param max_iter: Maximum number of iterations for BP
+    :param osd_order: Osd search depth
+    :param bp_method: BP method for BP_OSD. Choose from ‘product_sum’ or ‘minimum_sum’
+    :param schedule: choose from 'serial' or 'parallel'
+    :param osd_method: choose from:  'osd_e', 'osd_cs', 'osd_0'
+
+    :return logical_z_pred: Decoder's prediction of whether the logical Z codewords flipped. Shape (# trials, # logical quits)
+    '''
+    # parameters of decoders
+    dict1 = {'bp_method': bp_method,
+            'max_iter': max_iter,
+            'schedule': schedule,
+            'osd_method': osd_method,
+            'osd_order': osd_order}
+    dict2 = {'bp_method': bp_method,
+            'max_iter': max_iter,
+            'schedule': schedule,
+            'osd_method': osd_method,
+            'osd_order': osd_order}
+    logical_pred = sliding_window_circuit_mem(zcheck_samples, circuit, hz, lz, W, F, BpOsdDecoder, BpOsdDecoder, dict1, dict2, 'channel_probs', 'channel_probs', 'decode', 'decode', tqdm_on=tqdm_on)
+
+    return logical_pred
+
+
+__all__ = ["sliding_window_bposd_phenom_mem", "sliding_window_bposd_circuit_mem"]

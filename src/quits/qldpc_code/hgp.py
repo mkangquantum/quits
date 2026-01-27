@@ -1,0 +1,146 @@
+"""
+@author: Mingyu Kang, Yingjia Lin
+"""
+
+import numpy as np
+
+from .circuit_construction import get_builder
+from ..gf2_util import gf2_nullspace_basis, gf2_coset_reps_rowspace, compute_lz_and_lx
+from .base import QldpcCode
+
+
+class HgpCode(QldpcCode):
+    def __init__(self, h1, h2, verbose=False):
+        '''
+        :param h1: Parity check matrix of the first classical code used to construct the hgp code
+        :param h2: Parity check matrix of the second classical code used to construct the hgp code
+        '''
+        # Reference: Tillich & Zemor, arXiv:0903.0566 (hypergraph product codes).
+        # Canonical logicals follow the HGP convention in arXiv:2204.10812.
+        super().__init__()
+
+        self.h1, self.h2 = h1, h2
+        self.verbose = verbose
+        self.r1, self.n1 = h1.shape
+        self.r2, self.n2 = h2.shape
+
+        self.hz = np.concatenate((np.kron(h2, np.eye(self.n1, dtype=int)),
+                                  np.kron(np.eye(self.r2, dtype=int), h1.T)), axis=1)
+        self.hx = np.concatenate((np.kron(np.eye(self.n2, dtype=int), h1),
+                                  np.kron(h2.T, np.eye(self.r1, dtype=int))), axis=1)
+
+        self.l1 = gf2_nullspace_basis(self.h1)
+        self.l2 = gf2_nullspace_basis(self.h2)
+        self.k1, self.k2 = self.l1.shape[0], self.l2.shape[0]
+
+        if self.r1 == self.n1 - self.k1 and self.r2 == self.n2 - self.k2:  # If both classical parity check matrices are full-rank
+            if self.verbose:
+                print("HgpCode: using canonical logical codewords.")
+            self.lz, self.lx = self.get_canonical_logicals()  # set logical operators in the canonical form
+        else:
+            self.lz, self.lx = compute_lz_and_lx(self.hz, self.hx)
+
+    def get_canonical_logicals(self):
+        """
+        Canonical logicals for your HGP convention, assuming k1^T=k2^T=0.
+        Returns:
+          lz, lx: shape (k1*k2, num_data_qubits) as uint8.
+        """
+        E1 = gf2_coset_reps_rowspace(self.h1)  # (k1, n1) if H1 full row rank
+        E2 = gf2_coset_reps_rowspace(self.h2)  # (k2, n2)
+
+        lz = np.zeros((self.k1 * self.k2, self.hz.shape[1]), dtype=np.uint8)
+        lx = np.zeros((self.k1 * self.k2, self.hx.shape[1]), dtype=np.uint8)
+
+        cnt = 0
+        for i in range(self.k2):
+            for j in range(self.k1):
+                # Z: (E2_i ⊗ L1_j | 0)
+                lz[cnt, :self.n1 * self.n2] = np.kron(E2[i, :], self.l1[j, :]) & 1
+                # X: (L2_i ⊗ E1_j | 0)
+                lx[cnt, :self.n1 * self.n2] = np.kron(self.l2[i, :], E1[j, :]) & 1
+                cnt += 1
+
+        return lz, lx
+
+    def build_circuit(self, strategy="cardinal", **opts):
+        if strategy != "cardinal":
+            return super().build_circuit(strategy=strategy, **opts)
+        return self._build_cardinal_graph(**opts)
+
+    def _build_cardinal_graph(self, seed=1):
+        get_builder("cardinal").build_graph(self)
+        data_qubits, zcheck_qubits, xcheck_qubits = [], [], []
+
+        # Add nodes to the Tanner graph
+        for i in range(self.n1):
+            for j in range(self.n2):
+                node = i + j * (self.n1 + self.r1)
+                data_qubits += [node]
+                self.graph.add_node(node, pos=(i, j))
+                self.node_colors += ['blue']
+
+        start = self.n1
+        for i in range(self.r1):
+            for j in range(self.n2):
+                node = start + i + j * (self.n1 + self.r1)
+                xcheck_qubits += [node]
+                self.graph.add_node(node, pos=(i + self.n1, j))
+                self.node_colors += ['purple']
+
+        start = self.n2 * (self.n1 + self.r1)
+        for i in range(self.n1):
+            for j in range(self.r2):
+                node = start + i + j * (self.n1 + self.r1)
+                zcheck_qubits += [node]
+                self.graph.add_node(node, pos=(i, j + self.n2))
+                self.node_colors += ['green']
+
+        start = self.n2 * (self.n1 + self.r1) + self.n1
+        for i in range(self.r1):
+            for j in range(self.r2):
+                node = start + i + j * (self.n1 + self.r1)
+                data_qubits += [node]
+                self.graph.add_node(node, pos=(i + self.n1, j + self.n2))
+                self.node_colors += ['blue']
+
+        self.data_qubits = sorted(np.array(data_qubits))
+        self.zcheck_qubits = sorted(np.array(zcheck_qubits))
+        self.xcheck_qubits = sorted(np.array(xcheck_qubits))
+        self.check_qubits = np.concatenate((self.zcheck_qubits, self.xcheck_qubits))
+        self.all_qubits = sorted(np.array(data_qubits + zcheck_qubits + xcheck_qubits))
+
+        hedge_bool_list = self.get_classical_edge_bools(self.h1, seed)
+        vedge_bool_list = self.get_classical_edge_bools(self.h2, seed)
+
+        edge_no = 0
+        for classical_edge in np.argwhere(self.h1 == 1):
+            c0, c1 = classical_edge
+            edge_bool = hedge_bool_list[(c0, c1)]
+            for k in range(self.n2 + self.r2):
+                control, target = (k * (self.n1 + self.r1) + c0 + self.n1, k * (self.n1 + self.r1) + c1)
+                if (k < self.n2) ^ edge_bool:
+                    direction_ind = self.direction_inds['E']
+                else:
+                    direction_ind = self.direction_inds['W']
+                self.add_edge(edge_no, direction_ind, control, target)
+                edge_no += 1
+
+        for classical_edge in np.argwhere(self.h2 == 1):
+            c0, c1 = classical_edge
+            edge_bool = vedge_bool_list[(c0, c1)]
+            for k in range(self.n1 + self.r1):
+                control, target = (k + c1 * (self.n1 + self.r1), k + (c0 + self.n2) * (self.n1 + self.r1))
+                if (k < self.n1) ^ edge_bool:
+                    direction_ind = self.direction_inds['N']
+                else:
+                    direction_ind = self.direction_inds['S']
+                self.add_edge(edge_no, direction_ind, control, target)
+                edge_no += 1
+
+        # Color the edges of self.graph
+        self.color_edges()
+        return
+
+
+__all__ = ["HgpCode"]

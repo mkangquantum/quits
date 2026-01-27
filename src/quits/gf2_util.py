@@ -416,13 +416,15 @@ def verify_css_logicals(
     report["hz_plus_lz_spans_ker_hx"] = spans_ker_hx
 
     # --- Pairing matrix ---
-    pairing = (lx @ lz.T) & 1
+    overlap_weight = lx @ lz.T
+    pairing = overlap_weight % 2
     pairing_rank = int(gf2_rank(pairing)) if (lx.shape[0] and lz.shape[0]) else 0
     report["pairing_rank"] = pairing_rank
-    report["pairing_is_identity"] = (
+    pairing_is_identity = (
         pairing.shape[0] == pairing.shape[1]
         and np.array_equal(pairing, np.eye(pairing.shape[0], dtype=np.uint8))
     )
+    report["pairing_is_identity"] = pairing_is_identity
 
     # --- Final verdict ---
     ok = (
@@ -436,6 +438,7 @@ def verify_css_logicals(
         and spans_ker_hz
         and spans_ker_hx
         and (pairing_rank == k_expected)
+        and pairing_is_identity
     )
     report["ok"] = bool(ok)
 

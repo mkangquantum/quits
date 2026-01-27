@@ -5,12 +5,12 @@
 import numpy as np
 
 from .circuit_construction import get_builder
-from ..gf2_util import compute_lz_and_lx
+from ..gf2_util import _gf2_inv_square, compute_lz_and_lx
 from .base import QldpcCode
 
 
 class BpcCode(QldpcCode):
-    def __init__(self, p1, p2, lift_size, factor):
+    def __init__(self, p1, p2, lift_size, factor, verbose=False, canonical_basis="z"):
         '''
         :param p1: First polynomial used to construct the bp code. Each entry of the list is the power of each polynomial term.
                    e.g. p1 = [0, 1, 5] represents the polynomial 1 + x + x^5
@@ -24,6 +24,8 @@ class BpcCode(QldpcCode):
         self.p1, self.p2 = p1, p2
         self.lift_size = lift_size
         self.factor = factor
+        self.verbose = verbose
+        self.canonical_basis = canonical_basis
 
         b1 = np.zeros((self.factor, self.factor), dtype=int)
         b1_placeholder = np.zeros((self.factor, self.factor), dtype=int)
@@ -48,8 +50,14 @@ class BpcCode(QldpcCode):
 
         self.hz = np.concatenate((h2, h1T), axis=1)
         self.hx = np.concatenate((h1, h2T), axis=1)
-        self.lz, self.lx = compute_lz_and_lx(self.hz, self.hx)
-        # self.lz, self.lx = self.get_logicals()    # logical operators in the "canonical form"
+        # q = lift_size / factor in the balanced product construction.
+        q = self.lift_size // self.factor
+        if q % 2 == 1:
+            if self.verbose:
+                print("BpcCode: using canonical logical codewords (q is odd).")
+            self.lz, self.lx = self.get_canonical_logicals(canonical_basis=self.canonical_basis)
+        else:
+            self.lz, self.lx = compute_lz_and_lx(self.hz, self.hx)
 
     def get_block_mat(self, power):
         gen_mat = self.get_circulant_mat(self.factor, 1)
@@ -63,7 +71,7 @@ class BpcCode(QldpcCode):
         return mat, mat_placeholder
 
     # WRONG; SHOULD BE FIXED LATER
-    def get_logicals(self):
+    def get_canonical_logicals(self, canonical_basis="z"):
         '''
         :return: Logical operators of the code as a list of tuples (logical_z, logical_x)
                  where logical_z and logical_x are numpy arrays of shape (num_logicals, num_data_qubits)
@@ -97,6 +105,15 @@ class BpcCode(QldpcCode):
                 lx[cnt, :] = np.concatenate((np.zeros(self.hx.shape[1] - len(prod), dtype=int), prod))
 
                 cnt += 1
+
+        if canonical_basis == "z":
+            pairing = (lz @ lx.T) & 1
+            inv_pairing = _gf2_inv_square(pairing)
+            lx = (inv_pairing.T @ lx) & 1
+        elif canonical_basis == "x":
+            pairing = (lx @ lz.T) & 1
+            inv_pairing = _gf2_inv_square(pairing)
+            lz = (inv_pairing @ lz) & 1
 
         return lz, lx
 

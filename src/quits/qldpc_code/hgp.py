@@ -10,7 +10,7 @@ from .base import QldpcCode
 
 
 class HgpCode(QldpcCode):
-    def __init__(self, h1, h2):
+    def __init__(self, h1, h2, verbose=False):
         '''
         :param h1: Parity check matrix of the first classical code used to construct the hgp code
         :param h2: Parity check matrix of the second classical code used to construct the hgp code
@@ -18,6 +18,7 @@ class HgpCode(QldpcCode):
         super().__init__()
 
         self.h1, self.h2 = h1, h2
+        self.verbose = verbose
         self.r1, self.n1 = h1.shape
         self.r2, self.n2 = h2.shape
 
@@ -31,11 +32,13 @@ class HgpCode(QldpcCode):
         self.k1, self.k2 = self.l1.shape[0], self.l2.shape[0]
 
         if self.r1 == self.n1 - self.k1 and self.r2 == self.n2 - self.k2:  # If both classical parity check matrices are full-rank
-            self.lz, self.lx = self.get_logicals()  # set logical operators in the "canonical form"
+            if self.verbose:
+                print("HgpCode: using canonical logical codewords.")
+            self.lz, self.lx = self.get_canonical_logicals()  # set logical operators in the canonical form
         else:
             self.lz, self.lx = compute_lz_and_lx(self.hz, self.hx)
 
-    def get_logicals(self):
+    def get_canonical_logicals(self):
         """
         Canonical logicals for your HGP convention, assuming k1^T=k2^T=0.
         Returns:

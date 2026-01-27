@@ -1,12 +1,5 @@
-> 🚀 **New Release Available!**
->**v0.4.0** - Canonical logical codewords of HGP code fixed - please check the release note if you have already been using QUITS. `gf2_util.py` and test functions added. [Check out the latest release notes »](https://github.com/mkangquantum/quits/releases/tag/v0.4.0)
-> 
->**v0.3.0** - Logical codewords of HGP and BPC codes are now given in the "canonical" form. [Check out the latest release notes »](https://github.com/mkangquantum/quits/releases/tag/v0.3.0)
-> 
-> **v0.2.0** - base matrices of QLP codes can now be polynomial entries. [Check out the latest release notes »](https://github.com/mkangquantum/quits/releases/tag/v0.2.0)
-> 
-> **v0.1.0** – important bug is fixed, so please check the release note if you have already been using QUITS.
-> [Check out the release notes »](https://github.com/mkangquantum/quits/releases/tag/v0.1.0)
+> 🚀 **New Release Available!** 
+>**v0.5.0** - QUITS is now actually modular. [Check out the latest release notes »](https://github.com/mkangquantum/quits/releases/tag/v0.5.0)
 
 
 # QUITS: A modular Qldpc code circUIT Simulator

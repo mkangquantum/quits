@@ -10,7 +10,7 @@ from .base import QldpcCode
 
 
 class BpcCode(QldpcCode):
-    def __init__(self, p1, p2, lift_size, factor, verbose=False, canonical_basis="z"):
+    def __init__(self, p1, p2, lift_size, factor, canonical_basis="Z", verbose=False):
         '''
         :param p1: First polynomial used to construct the bp code. Each entry of the list is the power of each polynomial term.
                    e.g. p1 = [0, 1, 5] represents the polynomial 1 + x + x^5
@@ -18,6 +18,9 @@ class BpcCode(QldpcCode):
         :param lift_size: Size of cyclic matrix to which each monomial entry is lifted.
         :param factor: Power of the monomial generator of the cyclic subgroup that is factored out by the balanced product.
                        e.g. if factor == 3, cyclic subgroup <x^3> is factored out.
+        :param canonical_basis: Basis choice for canonical logicals; "Z" or "X".
+        :param verbose: If True, print construction details (e.g., when canonical logicals are used).
+        :note: BPC code does not currently support q = 1 (i.e., lift_size == factor).
         '''
         # Reference: R. Tiew & N. P. Breuckmann, arXiv:2411.03302 (balanced product cyclic codes).
         # Note: To match the paper, p2 should use lift_size minus the powers listed there (transpose convention).
@@ -27,7 +30,7 @@ class BpcCode(QldpcCode):
         self.lift_size = lift_size
         self.factor = factor
         self.verbose = verbose
-        self.canonical_basis = canonical_basis
+        self.canonical_basis = canonical_basis.upper()
 
         b1 = np.zeros((self.factor, self.factor), dtype=int)
         b1_placeholder = np.zeros((self.factor, self.factor), dtype=int)
@@ -52,8 +55,13 @@ class BpcCode(QldpcCode):
 
         self.hz = np.concatenate((h2, h1T), axis=1)
         self.hx = np.concatenate((h1, h2T), axis=1)
+
         # q = lift_size / factor in the balanced product construction.
         q = self.lift_size // self.factor
+        if q == 1:
+            raise ValueError(
+                "BpcCode does not currently support q = 1 (lift_size == factor)."
+            )
         if q % 2 == 1:
             if self.verbose:
                 print("BpcCode: using canonical logical codewords (q is odd).")
@@ -62,18 +70,19 @@ class BpcCode(QldpcCode):
             self.lz, self.lx = compute_lz_and_lx(self.hz, self.hx)
 
     def get_block_mat(self, power):
-        gen_mat = self.get_circulant_mat(self.factor, 1)
-        gen_mat[0, -1] = 2
+        # Each column shifts down by "power" with wraparound.
+        # The number of wraps determines the exponent.
+        cols = np.arange(self.factor, dtype=int)
+        rows = (cols + power) % self.factor
+        wraps = (cols + power) // self.factor
 
-        mat = np.linalg.matrix_power(gen_mat, power)
-        mat_placeholder = (mat > 0) * 1
-
-        mat = np.log2(mat + 1e-8).astype(int)
-        mat = mat * mat_placeholder * self.factor
+        mat = np.zeros((self.factor, self.factor), dtype=int)
+        mat_placeholder = np.zeros_like(mat)
+        mat[rows, cols] = wraps * self.factor
+        mat_placeholder[rows, cols] = 1
         return mat, mat_placeholder
 
-    # WRONG; SHOULD BE FIXED LATER
-    def get_canonical_logicals(self, canonical_basis="z"):
+    def get_canonical_logicals(self, canonical_basis="Z"):
         '''
         :return: Logical operators of the code as a list of tuples (logical_z, logical_x)
                  where logical_z and logical_x are numpy arrays of shape (num_logicals, num_data_qubits)
@@ -108,11 +117,14 @@ class BpcCode(QldpcCode):
 
                 cnt += 1
 
-        if canonical_basis == "z":
+        canonical_basis = canonical_basis.upper()
+        if canonical_basis not in ("Z", "X"):
+            raise ValueError("canonical_basis must be 'Z' or 'X'")
+        if canonical_basis == "Z":
             pairing = (lz @ lx.T) & 1
             inv_pairing = _gf2_inv_square(pairing)
             lx = (inv_pairing.T @ lx) & 1
-        elif canonical_basis == "x":
+        elif canonical_basis == "X":
             pairing = (lx @ lz.T) & 1
             inv_pairing = _gf2_inv_square(pairing)
             lz = (inv_pairing @ lz) & 1

@@ -25,6 +25,8 @@ def get_qldpc_mem_circuit(code, idle_error, sqgate_error, tqgate_error, spam_err
     '''
     
     basis = basis.upper()
+    if basis not in ('Z', 'X'):
+        raise ValueError("basis must be 'Z' or 'X'")
     get_Z_detectors = True if basis == 'Z' or get_all_detectors else False
     get_X_detectors = True if basis == 'X' or get_all_detectors else False
     directions = list(code.direction_inds.keys())
@@ -174,6 +176,8 @@ class Circuit:
         
     def add_reset(self, qubits, basis='Z'):        
         basis = basis.upper()
+        if basis not in ('Z', 'X'):
+            raise ValueError("basis must be 'Z' or 'X'")
         
         c = self.margin
         if basis == 'Z':
@@ -310,6 +314,8 @@ class Circuit:
         
     def add_measure(self, qubits, basis='Z'):
         basis = basis.upper()
+        if basis not in ('Z', 'X'):
+            raise ValueError("basis must be 'Z' or 'X'")
         
         c = ''
         if self.spam_error > 0.:

@@ -353,7 +353,7 @@ def verify_css_logicals(
       - gf2_rank
       - gf2_nullspace_basis
 
-    Returns a dict with booleans + ranks + dims + final 'ok'.
+    Returns a dict with booleans + ranks + dims + final 'all_tests_passed'.
     """
     hz = _as_gf2(hz)
     hx = _as_gf2(hx)
@@ -418,13 +418,17 @@ def verify_css_logicals(
     # --- Pairing matrix ---
     overlap_weight = lx @ lz.T
     pairing = overlap_weight % 2
-    pairing_rank = int(gf2_rank(pairing)) if (lx.shape[0] and lz.shape[0]) else 0
-    report["pairing_rank"] = pairing_rank
-    pairing_is_identity = (
-        pairing.shape[0] == pairing.shape[1]
-        and np.array_equal(pairing, np.eye(pairing.shape[0], dtype=np.uint8))
+    is_square_pairing = pairing.shape[0] == pairing.shape[1]
+    same_logicals_ZX_anticommute = (
+        is_square_pairing
+        and np.array_equal(np.diag(pairing), np.ones(pairing.shape[0], dtype=np.uint8))
     )
-    report["pairing_is_identity"] = pairing_is_identity
+    off_diag = pairing.copy()
+    if is_square_pairing and pairing.shape[0] > 0:
+        np.fill_diagonal(off_diag, 0)
+    different_logicals_ZX_commute = is_square_pairing and not np.any(off_diag)
+    report["same_logicals_ZX_anticommute"] = same_logicals_ZX_anticommute
+    report["different_logicals_ZX_commute"] = different_logicals_ZX_commute
 
     # --- Final verdict ---
     ok = (
@@ -437,9 +441,9 @@ def verify_css_logicals(
         and lx_indep_mod_stab
         and spans_ker_hz
         and spans_ker_hx
-        and (pairing_rank == k_expected)
-        and pairing_is_identity
+        and same_logicals_ZX_anticommute
+        and different_logicals_ZX_commute
     )
-    report["ok"] = bool(ok)
+    report["all_tests_passed"] = bool(ok)
 
     return report

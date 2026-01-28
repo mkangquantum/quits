@@ -14,6 +14,7 @@ class HgpCode(QldpcCode):
         '''
         :param h1: Parity check matrix of the first classical code used to construct the hgp code
         :param h2: Parity check matrix of the second classical code used to construct the hgp code
+        :param verbose: If True, print construction details (e.g., when canonical logicals are used).
         '''
         # Reference: Tillich & Zemor, arXiv:0903.0566 (hypergraph product codes).
         # Canonical logicals follow the HGP convention in arXiv:2204.10812.

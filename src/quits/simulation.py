@@ -37,8 +37,15 @@ def get_codecap_pL(code, p, num_trials, decoder, dict, basis='Z', seed=-1, tqdm_
     else:
         iterator = range(num_trials)
 
-    parity_check_matrix = code.hz if basis == 'Z' else code.hx
-    logical_codewords = code.lz if basis == 'Z' else code.lx
+    basis = basis.upper()
+    if basis == 'Z':
+        parity_check_matrix = code.hz
+        logical_codewords = code.lz
+    elif basis == 'X':
+        parity_check_matrix = code.hx
+        logical_codewords = code.lx
+    else:
+        raise ValueError("basis must be 'Z' or 'X'")
 
     bpd = decoder(parity_check_matrix, **dict)
 

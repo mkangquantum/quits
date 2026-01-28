@@ -42,7 +42,7 @@ def _run_sliding_window_phenom(code, code_name, p, num_rounds, num_trials, W, F,
     code.build_circuit(strategy="cardinal", seed=seed)
     report = code.verify_css_logicals()
     print(f"{code_name} verify_css_logicals", report)
-    assert report["ok"]
+    assert report["all_tests_passed"]
     depth = sum(code.num_colors.values())
     eff_error_rate_per_fault = p * (depth + 3)
 

@@ -89,7 +89,7 @@ def _print_results(name, params, depth, eff_error_rate_per_fault, pL, lfr):
 def test_bposd_decoder_phenom_low_lfr():
     code = _build_hgp_code(seed=22)
     report = code.verify_css_logicals()
-    assert report["ok"]
+    assert report["all_tests_passed"]
 
     params = {
         "p": 1e-3,
@@ -126,7 +126,7 @@ def test_bposd_decoder_phenom_low_lfr():
 def test_bplsd_decoder_phenom_low_lfr():
     code = _build_hgp_code(seed=22)
     report = code.verify_css_logicals()
-    assert report["ok"]
+    assert report["all_tests_passed"]
 
     params = {
         "p": 1e-3,

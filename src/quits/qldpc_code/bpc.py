@@ -143,6 +143,18 @@ class BpcCode(QldpcCode):
         circuit_build_options=None,
         **opts,
     ):
+        '''
+        Build a circuit for this balanced-product cyclic code using the selected strategy.
+
+        :param strategy: Circuit-construction strategy name (e.g., "cardinal").
+        :param seed: Random seed used by graph-edge orientation/coloring helpers.
+        :param error_model: ErrorModel specifying idle/single-/two-qubit/SPAM noise.
+        :param num_rounds: Number of noisy syndrome-extraction rounds after the zeroth round.
+        :param basis: Logical storage/measurement basis, either "Z" or "X".
+        :param circuit_build_options: CircuitBuildOptions controlling detector and noise toggles.
+        :param opts: Additional keyword arguments forwarded to non-cardinal strategies.
+        :return: Stim circuit text as a string.
+        '''
         if strategy != "cardinal":
             return super().build_circuit(strategy=strategy, seed=seed, **opts)
         if error_model is None:

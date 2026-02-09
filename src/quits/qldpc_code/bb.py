@@ -6,6 +6,8 @@ import numpy as np
 
 from ..circuit import Circuit
 from ..gf2_util import compute_lz_and_lx
+from ..noise import ErrorModel
+from .circuit_construction import CircuitBuildOptions
 from .base import QldpcCode
 
 
@@ -55,50 +57,88 @@ class BbCode(QldpcCode):
         self.hz = np.hstack((self.B.T, self.A.T))
         self.lz, self.lx = compute_lz_and_lx(self.hz, self.hx)
 
-    def build_circuit(self, strategy="freeform", **opts):
+    def build_circuit(
+        self,
+        strategy="freeform",
+        error_model=None,
+        num_rounds=0,
+        basis="Z",
+        circuit_build_options=None,
+        **opts,
+    ):
+        '''
+        Build a circuit for this BB code using the selected construction strategy.
+
+        :param strategy: Circuit-construction strategy name (e.g., "freeform").
+        :param error_model: ErrorModel specifying idle/single-/two-qubit/SPAM noise.
+        :param num_rounds: Number of noisy syndrome-extraction rounds after the zeroth round.
+        :param basis: Logical storage/measurement basis, either "Z" or "X".
+        :param circuit_build_options: CircuitBuildOptions controlling detector and noise toggles.
+        :param opts: Additional keyword arguments for BB freeform construction details.
+        :return: Stim circuit text as a string.
+        '''
         if strategy != "freeform":
-            return super().build_circuit(strategy=strategy, **opts)
-        return self._build_freeform_circuit(**opts)
+            return super().build_circuit(
+                strategy=strategy,
+                error_model=error_model,
+                num_rounds=num_rounds,
+                basis=basis,
+                circuit_build_options=circuit_build_options,
+                **opts,
+            )
+        return self._build_freeform_circuit(
+            error_model=error_model,
+            num_rounds=num_rounds,
+            basis=basis,
+            circuit_build_options=circuit_build_options,
+            **opts,
+        )
 
     def _build_freeform_circuit(
         self,
-        A_list=None,
-        B_list=None,
-        p=0.0,
-        num_repeat=1,
-        z_basis=True,
-        use_both=False,
-        HZH=False,
+        error_model=None,
+        num_rounds=0,
+        basis="Z",
+        circuit_build_options=None,
     ):
         n = int(self.hx.shape[1])
         if n % 2 != 0:
             raise ValueError("Number of data qubits must be even.")
-        if num_repeat < 1:
-            raise ValueError("num_repeat must be at least 1.")
+        if error_model is None:
+            error_model = ErrorModel()
+        if circuit_build_options is None:
+            circuit_build_options = CircuitBuildOptions()
+        elif not isinstance(circuit_build_options, CircuitBuildOptions):
+            raise TypeError("circuit_build_options must be a CircuitBuildOptions instance.")
+
+        basis = basis.upper()
+        if basis not in ("Z", "X"):
+            raise ValueError("basis must be 'Z' or 'X'.")
+        if num_rounds < 0:
+            raise ValueError("num_rounds must be at least 0.")
+
+        z_basis = basis == "Z"
 
         half = n // 2
 
-        if A_list is None or B_list is None:
-            S_l = self.get_circulant_mat(self.l, -1)
-            S_m = self.get_circulant_mat(self.m, -1)
-            x = np.kron(S_l, np.eye(self.m, dtype=int))
-            y = np.kron(np.eye(self.l, dtype=int), S_m)
+        S_l = self.get_circulant_mat(self.l, -1)
+        S_m = self.get_circulant_mat(self.m, -1)
+        x = np.kron(S_l, np.eye(self.m, dtype=int))
+        y = np.kron(np.eye(self.l, dtype=int), S_m)
 
-        if A_list is None:
-            A_list = [
-                np.linalg.matrix_power(x, power) for power in self.A_x_pows
-            ] + [
-                np.linalg.matrix_power(y, power) for power in self.A_y_pows
-            ]
-        if B_list is None:
-            B_list = [
-                np.linalg.matrix_power(y, power) for power in self.B_y_pows
-            ] + [
-                np.linalg.matrix_power(x, power) for power in self.B_x_pows
-            ]
+        A_list = [
+            np.linalg.matrix_power(x, power) for power in self.A_x_pows
+        ] + [
+            np.linalg.matrix_power(y, power) for power in self.A_y_pows
+        ]
+        B_list = [
+            np.linalg.matrix_power(y, power) for power in self.B_y_pows
+        ] + [
+            np.linalg.matrix_power(x, power) for power in self.B_x_pows
+        ]
 
         if len(A_list) != 3 or len(B_list) != 3:
-            raise ValueError("A_list and B_list must each contain exactly 3 terms.")
+            raise ValueError("A and B must each define exactly 3 shift terms.")
 
         a1, a2, a3 = A_list
         b1, b2, b3 = B_list
@@ -141,12 +181,16 @@ class BbCode(QldpcCode):
         all_qubits = np.arange(2 * n, dtype=int)
 
         circ = Circuit(all_qubits)
-        circ.set_error_rates(p, p, p, p)
+        if circuit_build_options.noisy_zeroth_round:
+            circ.set_error_model(error_model)
+        else:
+            circ.set_error_model(ErrorModel.zero())
 
         circ.add_reset(x_checks)
         circ.add_reset(z_checks)
-        circ.add_reset(data_qubits, basis="Z" if z_basis else "X")
+        circ.add_reset(data_qubits, basis=basis)
         circ.add_tick()
+        circ.set_error_model(error_model)
 
         def make_edges(control_offset, target_offset, mapping):
             return [(control_offset + int(mapping[i]), target_offset + i) for i in range(half)]
@@ -172,34 +216,28 @@ class BbCode(QldpcCode):
         def flatten(edges):
             return [q for edge in edges for q in edge]
 
-        def add_z_detectors(repeat):
+        def add_z_detectors_first():
             if z_basis:
-                if repeat:
-                    for i in range(half):
-                        circ.add_detector([half - i, n + half - i])
-                else:
-                    for i in range(half):
-                        circ.add_detector([half - i])
-            elif use_both and repeat:
+                for i in range(half):
+                    circ.add_detector([half - i])
+
+        def add_z_detectors_repeated():
+            if z_basis or circuit_build_options.get_all_detectors:
                 for i in range(half):
                     circ.add_detector([half - i, n + half - i])
 
-        def add_x_detectors(repeat):
+        def add_x_detectors_first():
             if not z_basis:
-                if repeat:
-                    for i in range(half):
-                        circ.add_detector([half - i, n + half - i])
-                else:
-                    for i in range(half):
-                        circ.add_detector([half - i])
-            elif use_both and repeat:
+                for i in range(half):
+                    circ.add_detector([half - i])
+
+        def add_x_detectors_repeated():
+            if (not z_basis) or circuit_build_options.get_all_detectors:
                 for i in range(half):
                     circ.add_detector([half - i, n + half - i])
 
-        def append_block(repeat=False):
-            if (not repeat) or HZH:
-                circ.add_hadamard_layer(x_checks)
-
+        def append_block():
+            circ.add_hadamard_layer(x_checks)
             circ.add_cnot_layer(flatten(edges_round1))
             circ.add_cnot_layer(flatten(edges_round2))
             circ.add_cnot_layer(flatten(edges_round3))
@@ -209,18 +247,23 @@ class BbCode(QldpcCode):
             circ.add_cnot_layer(flatten(edges_round7))
 
             circ.add_measure_reset_layer(z_checks)
-            add_z_detectors(repeat)
-
             circ.add_hadamard_layer(x_checks)
             circ.add_measure_reset_layer(x_checks)
-            if not HZH:
-                circ.add_hadamard_layer(x_checks)
-            add_x_detectors(repeat)
+            circ.add_hadamard_layer(x_checks)
 
-        for rep in range(num_repeat):
-            append_block(repeat=rep > 0)
+        append_block()
+        add_z_detectors_first()
+        add_x_detectors_first()
 
-        circ.add_measure(data_qubits, basis="Z" if z_basis else "X")
+        for _ in range(num_rounds):
+            append_block()
+            add_z_detectors_repeated()
+            add_x_detectors_repeated()
+
+        if not circuit_build_options.noisy_final_meas:
+            circ.set_error_model(ErrorModel.zero())
+
+        circ.add_measure(data_qubits, basis=basis)
 
         pcm = self.hz if z_basis else self.hx
         logical_pcm = self.lz if z_basis else self.lx

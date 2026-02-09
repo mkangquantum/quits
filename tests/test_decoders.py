@@ -1,8 +1,6 @@
 import numpy as np
-import stim
 
 from quits.noise import ErrorModel
-from quits.qldpc_code.circuit_construction.cardinal import CardinalBuilder
 from quits.decoder import sliding_window_bplsd_phenom_mem, sliding_window_bposd_phenom_mem
 from quits.qldpc_code import HgpCode
 from quits.simulation import get_stim_mem_result
@@ -18,14 +16,14 @@ def _build_hgp_code(seed=22):
     return code
 
 
-def _simulate_mem_circuit(code, p, num_rounds, num_trials, basis="Z"):
+def _simulate_mem_circuit(code, p, num_rounds, num_trials, basis="Z", seed=22):
     em = ErrorModel(p, p, p, p)
-    circuit = stim.Circuit(
-        CardinalBuilder(code).get_cardinal_circuit(
-            error_model=em,
-            num_rounds=num_rounds,
-            basis=basis,
-        )
+    circuit = code.build_circuit(
+        strategy="cardinal",
+        error_model=em,
+        num_rounds=num_rounds,
+        basis=basis,
+        seed=seed,
     )
     detection_events, observable_flips = get_stim_mem_result(
         circuit,
@@ -44,6 +42,7 @@ def _run_phenom_decoder(
     num_trials,
     W,
     F,
+    seed=22,
 ):
     depth = sum(code.num_colors.values())
     eff_error_rate_per_fault = p * (depth + 3)
@@ -53,6 +52,7 @@ def _run_phenom_decoder(
         p,
         num_rounds,
         num_trials,
+        seed=seed,
     )
 
     logical_pred = decoder_fn(
@@ -113,6 +113,7 @@ def test_bposd_decoder_phenom_low_lfr():
         params["num_trials"],
         params["W"],
         params["F"],
+        seed=22,
     )
     _print_results("BPOSD", params, depth, eff_error_rate_per_fault, pL, lfr)
     print()
@@ -150,6 +151,7 @@ def test_bplsd_decoder_phenom_low_lfr():
         params["num_trials"],
         params["W"],
         params["F"],
+        seed=22,
     )
     _print_results("BPLSD", params, depth, eff_error_rate_per_fault, pL, lfr)
     print()

@@ -136,7 +136,6 @@ class BpcCode(QldpcCode):
     def build_circuit(
         self,
         strategy="cardinal",
-        seed=1,
         error_model=None,
         num_rounds=0,
         basis="Z",
@@ -147,38 +146,43 @@ class BpcCode(QldpcCode):
         Build a circuit for this balanced-product cyclic code using the selected strategy.
 
         :param strategy: Circuit-construction strategy name (e.g., "cardinal").
-        :param seed: Random seed used by graph-edge orientation/coloring helpers.
         :param error_model: ErrorModel specifying idle/single-/two-qubit/SPAM noise.
         :param num_rounds: Number of noisy syndrome-extraction rounds after the zeroth round.
         :param basis: Logical storage/measurement basis, either "Z" or "X".
         :param circuit_build_options: CircuitBuildOptions controlling detector and noise toggles.
-        :param opts: Additional keyword arguments forwarded to non-cardinal strategies.
-        :return: Stim circuit text as a string.
+        :param opts: Additional keyword arguments, e.g., seed for the cardinal strategy.
+        :return: Stim circuit.
         '''
         if strategy != "cardinal":
-            return super().build_circuit(strategy=strategy, seed=seed, **opts)
+            return super().build_circuit(strategy=strategy, **opts)
         if error_model is None:
             error_model = ErrorModel()
         if circuit_build_options is None:
             circuit_build_options = CircuitBuildOptions()
         elif not isinstance(circuit_build_options, CircuitBuildOptions):
             raise TypeError("circuit_build_options must be a CircuitBuildOptions instance.")
+        seed = opts.get("seed", 1)
         return self._build_cardinal_circuit(
-            seed=seed,
             error_model=error_model,
             num_rounds=num_rounds,
             basis=basis,
             circuit_build_options=circuit_build_options,
+            seed=seed,
         )
 
     def _build_cardinal_circuit(
         self,
-        seed=1,
         error_model=None,
         num_rounds=0,
         basis="Z",
         circuit_build_options=None,
+        seed=1,
     ):
+        """
+        Build a cardinal circuit for this balanced-product cyclic code.
+
+        :param seed: Random seed used by graph-edge orientation/coloring helpers.
+        """
         if error_model is None:
             error_model = ErrorModel()
         if circuit_build_options is None:

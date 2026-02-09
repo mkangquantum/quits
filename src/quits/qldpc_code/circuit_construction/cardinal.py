@@ -2,6 +2,7 @@ import random
 
 import networkx as nx
 import numpy as np
+import stim
 
 from ...circuit import Circuit
 from ...noise import ErrorModel
@@ -147,7 +148,7 @@ class CardinalBuilder(CircuitBuilder):
         :param num_rounds: Number of stabilizer measurement rounds
         :param basis: Basis in which logical codewords are stored. Options are 'Z' and 'X'.
         :param circuit_build_options: CircuitBuildOptions for detector/noisy-round/final-meas behavior.
-        :return circuit: String that can be converted to Stim circuit by stim.Circuit()
+        :return circuit: Stim circuit
         '''
         code = self.code
         if error_model is None:
@@ -181,11 +182,11 @@ class CardinalBuilder(CircuitBuilder):
             circ.set_error_model(error_model)
         else:
             circ.set_error_model(ErrorModel.zero())
+            
         circ.add_reset(code.data_qubits, basis)
         circ.add_reset(code.check_qubits)
         circ.add_tick()
 
-        circ.set_error_model(error_model)
         _add_stabilizer_round()
 
         if basis == 'Z':
@@ -237,4 +238,4 @@ class CardinalBuilder(CircuitBuilder):
             for i in range(len(code.lx)):
                 circ.add_observable(i, len(code.data_qubits) - np.where(code.lx[i,:]==1)[0])
 
-        return circ.circuit
+        return stim.Circuit(circ.circuit)

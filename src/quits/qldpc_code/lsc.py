@@ -43,7 +43,6 @@ class LscCode(QlpPolyCode):
     def build_circuit(
         self,
         strategy="cardinal",
-        seed=1,
         error_model=None,
         num_rounds=0,
         basis="Z",
@@ -54,13 +53,12 @@ class LscCode(QlpPolyCode):
         Build a circuit for this lift-connected surface code using the selected strategy.
 
         :param strategy: Circuit-construction strategy name (e.g., "cardinal").
-        :param seed: Random seed used by graph-edge orientation/coloring helpers.
         :param error_model: ErrorModel specifying idle/single-/two-qubit/SPAM noise.
         :param num_rounds: Number of noisy syndrome-extraction rounds after the zeroth round.
         :param basis: Logical storage/measurement basis, either "Z" or "X".
         :param circuit_build_options: CircuitBuildOptions controlling detector and noise toggles.
-        :param opts: Additional keyword arguments forwarded to underlying strategy builders.
-        :return: Stim circuit text as a string.
+        :param opts: Additional keyword arguments, e.g., seed for the cardinal strategy.
+        :return: Stim circuit.
         '''
         if error_model is None:
             error_model = ErrorModel()
@@ -70,7 +68,6 @@ class LscCode(QlpPolyCode):
             raise TypeError("circuit_build_options must be a CircuitBuildOptions instance.")
         return super().build_circuit(
             strategy=strategy,
-            seed=seed,
             error_model=error_model,
             num_rounds=num_rounds,
             basis=basis,

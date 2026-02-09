@@ -1,22 +1,36 @@
 import numpy as np
-import stim
 from ldpc.bposd_decoder import BpOsdDecoder
 
 from quits.noise import ErrorModel
-from quits.qldpc_code.circuit_construction.cardinal import CardinalBuilder
 from quits.decoder.sliding_window import sliding_window_phenom_mem
-from quits.qldpc_code import BpcCode, HgpCode, LscCode, QlpCode
+from quits.qldpc_code import BbCode, BpcCode, HgpCode, LscCode, QlpCode
 from quits.simulation import get_stim_mem_result
 
 
-def _simulate_mem_circuit(code, p, num_rounds, num_trials, basis="Z"):
+def _simulate_mem_cardinal_circuit(code, p, num_rounds, num_trials, basis="Z", seed=1):
     em = ErrorModel(p, p, p, p)
-    circuit = stim.Circuit(
-        CardinalBuilder(code).get_cardinal_circuit(
-            error_model=em,
-            num_rounds=num_rounds,
-            basis=basis,
-        )
+    circuit = code.build_circuit(
+        strategy="cardinal",
+        error_model=em,
+        num_rounds=num_rounds,
+        basis=basis,
+        seed=seed,
+    )
+    detection_events, observable_flips = get_stim_mem_result(
+        circuit,
+        num_trials,
+        seed=1,
+    )
+    return circuit, detection_events, observable_flips
+
+
+def _simulate_mem_freeform_circuit(code, p, num_rounds, num_trials, basis="Z"):
+    em = ErrorModel(p, p, p, p)
+    circuit = code.build_circuit(
+        strategy="freeform",
+        error_model=em,
+        num_rounds=num_rounds,
+        basis=basis,
     )
     detection_events, observable_flips = get_stim_mem_result(
         circuit,
@@ -44,11 +58,12 @@ def _run_sliding_window_phenom(code, code_name, p, num_rounds, num_trials, W, F,
     depth = sum(code.num_colors.values())
     eff_error_rate_per_fault = p * (depth + 3)
 
-    _, detection_events, observable_flips = _simulate_mem_circuit(
+    _, detection_events, observable_flips = _simulate_mem_cardinal_circuit(
         code,
         p,
         num_rounds,
         num_trials,
+        seed=seed,
     )
 
     dict1 = _bp_osd_params(max_iter, osd_order)
@@ -89,7 +104,7 @@ def _print_results(code_name, params, depth, eff_error_rate_per_fault, pL, lfr):
     )
 
 
-def test_hgp_code_circuit_phenom_low_lfr():
+def test_hgp_code_circuit_low_lfr():
     h = np.loadtxt(
         "parity_check_matrices/n=12_dv=3_dc=4_dist=6.txt",
         dtype=int,
@@ -114,7 +129,7 @@ def test_hgp_code_circuit_phenom_low_lfr():
     assert lfr <= 0.08
 
 
-def test_qlp_code_circuit_phenom_low_lfr():
+def test_qlp_code_circuit_low_lfr():
     lift_size = 16
     b = np.array(
         [
@@ -143,7 +158,7 @@ def test_qlp_code_circuit_phenom_low_lfr():
     assert lfr <= 0.1
 
 
-def test_bpc_code_circuit_phenom_low_lfr():
+def test_bpc_code_circuit_low_lfr():
     lift_size, factor = 15, 3
     p1 = [0, 1, 5]
     p2 = [0, 8, 13]
@@ -167,7 +182,7 @@ def test_bpc_code_circuit_phenom_low_lfr():
     assert lfr <= 0.1
 
 
-def test_lsc_code_circuit_phenom_low_lfr():
+def test_lsc_code_circuit_low_lfr():
     lift_size = 5
     length = 3  # length = l + 1
     code = LscCode(lift_size, length)
@@ -193,6 +208,77 @@ def test_lsc_code_circuit_phenom_low_lfr():
 
     depth, eff_error_rate_per_fault, pL, lfr = _run_sliding_window_phenom(code, "LSC", **params, seed=1)
     _print_results("LSC", params, depth, eff_error_rate_per_fault, pL, lfr)
+    print()
+
+    assert pL <= 0.3
+    assert lfr <= 0.1
+
+
+def test_bb_code_circuit_low_lfr():
+    code = BbCode(
+        l=15,
+        m=3,
+        A_x_pows=[9],
+        A_y_pows=[1, 2],
+        B_x_pows=[2, 7],
+        B_y_pows=[0],
+    )
+
+    report = code.verify_css_logicals()
+    print("BB verify_css_logicals", report)
+    assert report["all_tests_passed"]
+
+    params = {
+        "p": 1e-3,
+        "num_rounds": 15,
+        "num_trials": 50,
+        "W": 5,
+        "F": 3,
+        "max_iter": 10,
+        "osd_order": 1,
+    }
+
+    _, detection_events, observable_flips = _simulate_mem_freeform_circuit(
+        code,
+        p=params["p"],
+        num_rounds=params["num_rounds"],
+        num_trials=params["num_trials"],
+    )
+
+    depth = 7
+    eff_error_rate_per_fault = params["p"] * (depth + 3)
+    dict1 = _bp_osd_params(params["max_iter"], params["osd_order"])
+    dict2 = _bp_osd_params(params["max_iter"], params["osd_order"])
+    dict1["error_rate"] = float(eff_error_rate_per_fault)
+    dict2["error_rate"] = float(eff_error_rate_per_fault)
+
+    logical_pred = sliding_window_phenom_mem(
+        detection_events,
+        code.hz,
+        code.lz,
+        params["W"],
+        params["F"],
+        BpOsdDecoder,
+        BpOsdDecoder,
+        dict1,
+        dict2,
+        "decode",
+        "decode",
+        tqdm_on=False,
+    )
+
+    pL = np.mean((observable_flips - logical_pred).any(axis=1))
+    lfr = 1 - (1 - pL) ** (1 / params["num_rounds"])
+    print(
+        "BB sliding_window_phenom_mem",
+        {
+            **params,
+            "depth": depth,
+            "eff_error_rate_per_fault": float(eff_error_rate_per_fault),
+            "pL": float(pL),
+            "lfr": float(lfr),
+        },
+    )
     print()
 
     assert pL <= 0.3

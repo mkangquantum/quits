@@ -1,7 +1,8 @@
 import numpy as np
 import stim
 
-from quits.circuit import get_qldpc_mem_circuit
+from quits.noise import ErrorModel
+from quits.qldpc_code.circuit_construction.cardinal import CardinalBuilder
 from quits.decoder import sliding_window_bplsd_phenom_mem, sliding_window_bposd_phenom_mem
 from quits.qldpc_code import HgpCode
 from quits.simulation import get_stim_mem_result
@@ -18,14 +19,11 @@ def _build_hgp_code(seed=22):
 
 
 def _simulate_mem_circuit(code, p, num_rounds, num_trials, basis="Z"):
+    em = ErrorModel(p, p, p, p)
     circuit = stim.Circuit(
-        get_qldpc_mem_circuit(
-            code,
-            p,
-            p,
-            p,
-            p,
-            num_rounds,
+        CardinalBuilder(code).get_cardinal_circuit(
+            error_model=em,
+            num_rounds=num_rounds,
             basis=basis,
         )
     )

@@ -68,8 +68,8 @@ class QldpcCode:
 
     # Draw the Tanner graph of the code.
     def draw_graph(self, draw_edges=True):
-        builder = get_builder("cardinal")
-        return builder.draw_graph(self, draw_edges=draw_edges)
+        builder = get_builder("cardinal", self)
+        return builder.draw_graph(draw_edges=draw_edges)
 
     def build_circuit(self, strategy="cardinal", **opts):
         builder = get_builder(strategy)
@@ -85,17 +85,17 @@ class QldpcCode:
 
     # Helper function for assigning bool to each edge of the classical code's parity check matrix
     def get_classical_edge_bools(self, h, seed):
-        builder = get_builder("cardinal")
+        builder = get_builder("cardinal", self)
         return builder.get_classical_edge_bools(h, seed)
 
     # Helper function for adding edges
     def add_edge(self, edge_no, direction_ind, control, target):
-        builder = get_builder("cardinal")
-        return builder.add_edge(self, edge_no, direction_ind, control, target)
+        builder = get_builder("cardinal", self)
+        return builder.add_edge(edge_no, direction_ind, control, target)
 
     def color_edges(self):
-        builder = get_builder("cardinal")
-        return builder.color_edges(self)
+        builder = get_builder("cardinal", self)
+        return builder.color_edges()
 
 
 __all__ = ["QldpcCode"]

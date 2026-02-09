@@ -1,7 +1,9 @@
 import numpy as np
 import stim
 
-from quits.circuit import check_overlapping_CX, get_qldpc_mem_circuit
+from quits.circuit import check_overlapping_CX
+from quits.noise import ErrorModel
+from quits.qldpc_code.circuit_construction.cardinal import CardinalBuilder
 from quits.qldpc_code import HgpCode
 
 
@@ -12,9 +14,10 @@ def test_check_overlapping_cx_hgp_prints_when_verbose():
     )
     code = HgpCode(h, h)
     code.build_circuit(strategy="cardinal", seed=22)
+    em = ErrorModel(1e-3, 1e-3, 1e-3, 1e-3)
 
     circuit = stim.Circuit(
-        get_qldpc_mem_circuit(code, 1e-3, 1e-3, 1e-3, 1e-3, 1, basis="Z")
+        CardinalBuilder(code).get_cardinal_circuit(error_model=em, num_rounds=1, basis="Z")
     )
 
     overlaps = check_overlapping_CX(circuit, verbose=True)

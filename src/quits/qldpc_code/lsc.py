@@ -12,6 +12,8 @@ on the two diagonals.
 
 import numpy as np
 
+from ..noise import ErrorModel
+from .circuit_construction.circuit_build_options import CircuitBuildOptions
 from .qlp import QlpPolyCode
 
 
@@ -37,6 +39,32 @@ class LscCode(QlpPolyCode):
         self.b = np.array(b, dtype=object)
 
         super().__init__(b, b, lift_size)
+
+    def build_circuit(
+        self,
+        strategy="cardinal",
+        seed=1,
+        error_model=None,
+        num_rounds=0,
+        basis="Z",
+        circuit_build_options=None,
+        **opts,
+    ):
+        if error_model is None:
+            error_model = ErrorModel()
+        if circuit_build_options is None:
+            circuit_build_options = CircuitBuildOptions()
+        elif not isinstance(circuit_build_options, CircuitBuildOptions):
+            raise TypeError("circuit_build_options must be a CircuitBuildOptions instance.")
+        return super().build_circuit(
+            strategy=strategy,
+            seed=seed,
+            error_model=error_model,
+            num_rounds=num_rounds,
+            basis=basis,
+            circuit_build_options=circuit_build_options,
+            **opts,
+        )
 
 
 __all__ = ["LscCode"]

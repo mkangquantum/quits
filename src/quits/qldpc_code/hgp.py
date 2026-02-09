@@ -4,7 +4,9 @@
 
 import numpy as np
 
+from ..noise import ErrorModel
 from .circuit_construction import get_builder
+from .circuit_construction.circuit_build_options import CircuitBuildOptions
 from ..gf2_util import gf2_nullspace_basis, gf2_coset_reps_rowspace, compute_lz_and_lx
 from .base import QldpcCode
 
@@ -64,13 +66,48 @@ class HgpCode(QldpcCode):
 
         return lz, lx
 
-    def build_circuit(self, strategy="cardinal", **opts):
+    def build_circuit(
+        self,
+        strategy="cardinal",
+        seed=1,
+        error_model=None,
+        num_rounds=0,
+        basis="Z",
+        circuit_build_options=None,
+        **opts,
+    ):
         if strategy != "cardinal":
-            return super().build_circuit(strategy=strategy, **opts)
-        return self._build_cardinal_graph(**opts)
+            return super().build_circuit(strategy=strategy, seed=seed, **opts)
+        if error_model is None:
+            error_model = ErrorModel()
+        if circuit_build_options is None:
+            circuit_build_options = CircuitBuildOptions()
+        elif not isinstance(circuit_build_options, CircuitBuildOptions):
+            raise TypeError("circuit_build_options must be a CircuitBuildOptions instance.")
+        return self._build_cardinal_circuit(
+            seed=seed,
+            error_model=error_model,
+            num_rounds=num_rounds,
+            basis=basis,
+            circuit_build_options=circuit_build_options,
+        )
 
-    def _build_cardinal_graph(self, seed=1):
-        get_builder("cardinal").build_graph(self)
+    def _build_cardinal_circuit(
+        self,
+        seed=1,
+        error_model=None,
+        num_rounds=0,
+        basis="Z",
+        circuit_build_options=None,
+    ):
+        if error_model is None:
+            error_model = ErrorModel()
+        if circuit_build_options is None:
+            circuit_build_options = CircuitBuildOptions()
+        elif not isinstance(circuit_build_options, CircuitBuildOptions):
+            raise TypeError("circuit_build_options must be a CircuitBuildOptions instance.")
+        builder = get_builder("cardinal", self)
+        builder.build_graph()
         data_qubits, zcheck_qubits, xcheck_qubits = [], [], []
 
         # Add nodes to the Tanner graph
@@ -141,7 +178,12 @@ class HgpCode(QldpcCode):
 
         # Color the edges of self.graph
         self.color_edges()
-        return
+        return builder.get_cardinal_circuit(
+            error_model=error_model,
+            num_rounds=num_rounds,
+            basis=basis,
+            circuit_build_options=circuit_build_options,
+        )
 
 
 __all__ = ["HgpCode"]

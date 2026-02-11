@@ -12,6 +12,8 @@ from .base import QldpcCode
 
 
 class BpcCode(QldpcCode):
+    supported_strategies = {"cardinal", "zxcoloration"}
+
     def __init__(self, p1, p2, lift_size, factor, canonical_basis="Z", verbose=False):
         '''
         :param p1: First polynomial used to construct the bp code. Each entry of the list is the power of each polynomial term.
@@ -153,23 +155,33 @@ class BpcCode(QldpcCode):
         :param opts: Additional keyword arguments, e.g., seed for the cardinal strategy.
         :return: Stim circuit.
         '''
-        if strategy != "cardinal":
-            return super().build_circuit(strategy=strategy, **opts)
         if error_model is None:
             error_model = ErrorModel()
         if circuit_build_options is None:
             circuit_build_options = CircuitBuildOptions()
         elif not isinstance(circuit_build_options, CircuitBuildOptions):
             raise TypeError("circuit_build_options must be a CircuitBuildOptions instance.")
-        seed = opts.get("seed", 1)
-        return self._build_cardinal_circuit(
-            error_model=error_model,
-            num_rounds=num_rounds,
-            basis=basis,
-            circuit_build_options=circuit_build_options,
-            seed=seed,
-        )
-
+        
+        if strategy == "cardinal":
+            seed = opts.get("seed", 1)
+            return self._build_cardinal_circuit(
+                error_model=error_model,
+                num_rounds=num_rounds,
+                basis=basis,
+                circuit_build_options=circuit_build_options,
+                seed=seed,
+            )
+        elif strategy == "zxcoloration":
+            builder = get_builder("zxcoloration", self)
+            return builder.get_coloration_circuit(
+                error_model=error_model,
+                num_rounds=num_rounds,
+                basis=basis,
+                circuit_build_options=circuit_build_options,
+            )
+        else:
+            return super().build_circuit(strategy=strategy, **opts)
+        
     def _build_cardinal_circuit(
         self,
         error_model=None,
@@ -235,7 +247,6 @@ class BpcCode(QldpcCode):
         vedge_bool_list = self.get_classical_edge_bools(np.ones(self.b1.shape, dtype=int), seed)
 
         # Add edges to the Tanner graph of each direction
-        edge_no = 0
         for i in range(self.factor):
             for j in range(self.factor):
                 shift = self.b1[i, j]
@@ -244,14 +255,13 @@ class BpcCode(QldpcCode):
                 for l in range(self.lift_size):
                     for k in range(2):  # 0 : bottom, 1 : top
                         if k ^ edge_bool:
-                            direction_ind = self.direction_inds['E']
+                            direction = 'E'
                         else:
-                            direction_ind = self.direction_inds['W']
+                            direction = 'W'
 
                         control = (2 * k + 1) * self.factor * self.lift_size + i * self.lift_size + (l + shift) % self.lift_size
                         target = 2 * k * self.factor * self.lift_size + j * self.lift_size + l
-                        self.add_edge(edge_no, direction_ind, control, target)
-                        edge_no += 1
+                        self.add_edge(direction, control, target)
 
         def shuffle(node_no, qubit_no):
             m, r = qubit_no // self.factor, qubit_no % self.factor
@@ -267,14 +277,13 @@ class BpcCode(QldpcCode):
                         j_shuffled, _ = shuffle(i, (l + shift) % self.lift_size)
                         edge_bool = vedge_bool_list[(i_shuffled, j_shuffled)]
                         if k ^ edge_bool:
-                            direction_ind = self.direction_inds['N']
+                            direction = 'N'
                         else:
-                            direction_ind = self.direction_inds['S']
+                            direction = 'S'
 
                         control = k * self.factor * self.lift_size + i * self.lift_size + l
                         target = (2 + k) * self.factor * self.lift_size + i * self.lift_size + (l + shift) % self.lift_size
-                        self.add_edge(edge_no, direction_ind, control, target)
-                        edge_no += 1
+                        self.add_edge(direction, control, target)
 
         # Color the edges of self.graph
         self.color_edges()

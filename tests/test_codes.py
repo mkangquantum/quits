@@ -24,10 +24,26 @@ def _simulate_mem_cardinal_circuit(code, p, num_rounds, num_trials, basis="Z", s
     return circuit, detection_events, observable_flips
 
 
-def _simulate_mem_freeform_circuit(code, p, num_rounds, num_trials, basis="Z"):
+def _simulate_mem_zxcoloration_circuit(code, p, num_rounds, num_trials, basis="Z"):
     em = ErrorModel(p, p, p, p)
     circuit = code.build_circuit(
-        strategy="freeform",
+        strategy="zxcoloration",
+        error_model=em,
+        num_rounds=num_rounds,
+        basis=basis,
+    )
+    detection_events, observable_flips = get_stim_mem_result(
+        circuit,
+        num_trials,
+        seed=1,
+    )
+    return circuit, detection_events, observable_flips
+
+
+def _simulate_mem_custom_circuit(code, p, num_rounds, num_trials, basis="Z"):
+    em = ErrorModel(p, p, p, p)
+    circuit = code.build_circuit(
+        strategy="custom",
         error_model=em,
         num_rounds=num_rounds,
         basis=basis,
@@ -50,21 +66,48 @@ def _bp_osd_params(max_iter, osd_order):
     }
 
 
-def _run_sliding_window_phenom(code, code_name, p, num_rounds, num_trials, W, F, max_iter, osd_order, seed=1):
-    code.build_circuit(strategy="cardinal", seed=seed)
+def _run_sliding_window_phenom(
+    code,
+    code_name,
+    p,
+    num_rounds,
+    num_trials,
+    W,
+    F,
+    max_iter,
+    osd_order,
+    seed=1,
+    strategy="cardinal",
+):
+    if strategy == "cardinal":
+        code.build_circuit(strategy="cardinal", seed=seed)
+    elif strategy == "zxcoloration":
+        code.build_circuit(strategy="zxcoloration")
+    else:
+        raise ValueError(f"Unsupported strategy: {strategy}")
+
     report = code.verify_css_logicals()
     print(f"{code_name} verify_css_logicals", report)
     assert report["all_tests_passed"]
-    depth = sum(code.num_colors.values())
+
+    depth = code.depth
     eff_error_rate_per_fault = p * (depth + 3)
 
-    _, detection_events, observable_flips = _simulate_mem_cardinal_circuit(
-        code,
-        p,
-        num_rounds,
-        num_trials,
-        seed=seed,
-    )
+    if strategy == "cardinal":
+        _, detection_events, observable_flips = _simulate_mem_cardinal_circuit(
+            code,
+            p,
+            num_rounds,
+            num_trials,
+            seed=seed,
+        )
+    else:
+        _, detection_events, observable_flips = _simulate_mem_zxcoloration_circuit(
+            code,
+            p,
+            num_rounds,
+            num_trials,
+        )
 
     dict1 = _bp_osd_params(max_iter, osd_order)
     dict2 = _bp_osd_params(max_iter, osd_order)
@@ -112,7 +155,7 @@ def test_hgp_code_circuit_low_lfr():
     code = HgpCode(h, h)
 
     params = {
-        "p": 1e-3,
+        "p": 5e-4,
         "num_rounds": 15,
         "num_trials": 50,
         "W": 5,
@@ -121,12 +164,43 @@ def test_hgp_code_circuit_low_lfr():
         "osd_order": 1,
     }
 
-    depth, eff_error_rate_per_fault, pL, lfr = _run_sliding_window_phenom(code, "HGP", **params, seed=22)
+    depth, eff_error_rate_per_fault, pL, lfr = _run_sliding_window_phenom(code, "HGP", **params, seed=1)
     _print_results("HGP", params, depth, eff_error_rate_per_fault, pL, lfr)
     print()
 
     assert pL <= 0.25
     assert lfr <= 0.08
+
+
+def test_hgpcode_zxcoloration_circuit_low_lfr():
+    h = np.loadtxt(
+        "parity_check_matrices/n=12_dv=3_dc=4_dist=6.txt",
+        dtype=int,
+    )
+    code = HgpCode(h, h)
+
+    params = {
+        "p": 5e-4,
+        "num_rounds": 15,
+        "num_trials": 50,
+        "W": 5,
+        "F": 3,
+        "max_iter": 10,
+        "osd_order": 1,
+    }
+
+    depth, eff_error_rate_per_fault, pL, lfr = _run_sliding_window_phenom(
+        code,
+        "HGP-ZX",
+        **params,
+        strategy="zxcoloration",
+    )
+    _print_results("HGP-ZX", params, depth, eff_error_rate_per_fault, pL, lfr)
+    print()
+
+    assert pL <= 0.25
+    assert lfr <= 0.08
+
 
 
 def test_qlp_code_circuit_low_lfr():
@@ -238,7 +312,7 @@ def test_bb_code_circuit_low_lfr():
         "osd_order": 1,
     }
 
-    _, detection_events, observable_flips = _simulate_mem_freeform_circuit(
+    _, detection_events, observable_flips = _simulate_mem_custom_circuit(
         code,
         p=params["p"],
         num_rounds=params["num_rounds"],

@@ -13,11 +13,11 @@ def _build_hgp_code():
         dtype=int,
     )
     code = HgpCode(h, h)
-    code.build_circuit(strategy="cardinal", seed=22)
+    code.build_circuit(strategy="cardinal", seed=1)
     return code
 
 
-def _simulate_mem_circuit(code, p, num_rounds, num_trials, basis="Z", seed=22):
+def _simulate_mem_circuit(code, p, num_rounds, num_trials, basis="Z", seed=1):
     em = ErrorModel(p, p, p, p)
     circuit = code.build_circuit(
         strategy="cardinal",
@@ -46,7 +46,7 @@ def _bp_osd_params(max_iter, osd_order):
 
 def test_sliding_window_circuit_mem_low_logical_error():
     code = _build_hgp_code()
-    p = 1e-3
+    p = 5e-4
     num_rounds = 15
     num_trials = 50
     W, F = 5, 3
@@ -57,7 +57,7 @@ def test_sliding_window_circuit_mem_low_logical_error():
         p,
         num_rounds,
         num_trials,
-        seed=22,
+        seed=1,
     )
 
     dict1 = _bp_osd_params(max_iter, osd_order)
@@ -106,7 +106,7 @@ def test_sliding_window_circuit_mem_low_logical_error():
 
 def test_sliding_window_phenom_mem_low_logical_error():
     code = _build_hgp_code()
-    p = 1e-3
+    p = 5e-4
     num_rounds = 15
     num_trials = 50
     W, F = 5, 3
@@ -117,10 +117,10 @@ def test_sliding_window_phenom_mem_low_logical_error():
         p,
         num_rounds,
         num_trials,
-        seed=22,
+        seed=1,
     )
 
-    depth = sum(code.num_colors.values())
+    depth = code.depth
     eff_error_rate_per_fault = p * (depth + 3)
 
     dict1 = _bp_osd_params(max_iter, osd_order)

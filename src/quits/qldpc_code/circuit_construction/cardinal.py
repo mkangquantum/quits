@@ -7,6 +7,7 @@ import stim
 from ...circuit import Circuit
 from ...noise import ErrorModel
 from .circuit_build_options import CircuitBuildOptions
+from .edge_coloration import edge_coloration
 from .base import CircuitBuilder
 
 
@@ -38,18 +39,19 @@ class CardinalBuilder(CircuitBuilder):
     def build_graph(self, **opts):
         code = self.code
         code.graph = nx.Graph()
-        code.direction_inds = {'E': 0, 'N': 1, 'S': 2, 'W': 3}
-        code.direction_colors = ['green', 'blue', 'orange', 'red']
+        code.direction_colors = {'E': 'green', 'N': 'blue', 'S': 'orange', 'W': 'red'}
 
         code.node_colors = []  # 'blue' for data qubits, 'green' for zcheck qubits, 'purple' for xcheck qubits
-        code.edges = [[] for _ in range(len(code.direction_inds))]  # edges of the Tanner graph of each direction
+        code.edges_E = []  # edges of the Tanner graph of east direction
+        code.edges_N = []  # edges of the Tanner graph of north direction
+        code.edges_S = []  # edges of the Tanner graph of south direction
+        code.edges_W = []  # edges of the Tanner graph of west direction
 
-        # dictionaries used to efficiently construct the reversed Tanner graph for each direction
-        code.rev_dics = [{} for _ in range(len(code.direction_inds))]
-        code.rev_nodes = [[] for _ in range(len(code.direction_inds))]  # nodes of the reversed Tanner graph of each direction
-        code.rev_edges = [[] for _ in range(len(code.direction_inds))]  # edges of the reversed Tanner graph of each direction.
-        code.colored_edges = [{} for _ in range(len(code.direction_inds))]  # for each direction, dictionary's key is the color, values are the edges
-        code.num_colors = {direction: 0 for direction in code.direction_inds.keys()}
+        code.colored_edges_E = {}  # for east direction, key is color, values are edges
+        code.colored_edges_N = {}  # for north direction, key is color, values are edges
+        code.colored_edges_S = {}  # for south direction, key is color, values are edges
+        code.colored_edges_W = {}  # for west direction, key is color, values are edges
+        code.num_colors = {'E': 0, 'N': 0, 'S': 0, 'W': 0}
         return
 
     # Helper function for assigning bool to each edge of the classical code's parity check matrix
@@ -74,63 +76,43 @@ class CardinalBuilder(CircuitBuilder):
         return edge_signs
 
     # Helper function for adding edges
-    def add_edge(self, edge_no, direction_ind, control, target):
+    def add_edge(self, direction, control, target):
         code = self.code
-        code.edges[direction_ind] += [(control, target)]
-        code.graph.add_edge(control, target, color=code.direction_colors[direction_ind])
-
-        # add edge to rev graph
-        code.rev_nodes[direction_ind] += [edge_no]
-        if control not in code.rev_dics[direction_ind]:
-            code.rev_dics[direction_ind][control] = [edge_no]
+        edge = (control, target)
+        if direction == 'E':
+            code.edges_E += [edge]
+        elif direction == 'N':
+            code.edges_N += [edge]
+        elif direction == 'S':
+            code.edges_S += [edge]
+        elif direction == 'W':
+            code.edges_W += [edge]
         else:
-            code.rev_dics[direction_ind][control] += [edge_no]
-        if target not in code.rev_dics[direction_ind]:
-            code.rev_dics[direction_ind][target] = [edge_no]
-        else:
-            code.rev_dics[direction_ind][target] += [edge_no]
+            raise ValueError(f"Unknown direction: {direction}")
+        code.graph.add_edge(control, target, color=code.direction_colors[direction])
         return
 
     def color_edges(self):
         code = self.code
-        # Construct the reversed Tanner graph's edges from rev_dics dictionary
-        for direction_ind in range(len(code.rev_edges)):
-            dic = code.rev_dics[direction_ind]
-            for nodes in dic.values():
-                for i in range(len(nodes) - 1):
-                    for j in range(i + 1, len(nodes)):
-                        code.rev_edges[direction_ind] += [(nodes[i], nodes[j])]
+        def _build_direction_graph(edges):
+            graph = nx.Graph()
+            graph.add_nodes_from([int(q) for q in code.data_qubits], bipartite=0)
+            graph.add_nodes_from([int(q) for q in code.check_qubits], bipartite=1)
+            for control, target in edges:
+                graph.add_edge(control, target, orientation=(control, target))
+            return graph
 
-        # list of colors of the reversed Tanner graph's nodes for each direction
-        edge_colors = [[] for _ in range(len(code.direction_inds))]
-        # Apply coloring to the reversed Tanner graph
-        for direction_ind in range(len(code.rev_edges)):
-            rev_graph = nx.Graph()
-            rev_graph.add_nodes_from(code.rev_nodes[direction_ind])
-            rev_graph.add_edges_from(code.rev_edges[direction_ind])
+        code.colored_edges_E = edge_coloration(_build_direction_graph(code.edges_E))
+        code.colored_edges_N = edge_coloration(_build_direction_graph(code.edges_N))
+        code.colored_edges_S = edge_coloration(_build_direction_graph(code.edges_S))
+        code.colored_edges_W = edge_coloration(_build_direction_graph(code.edges_W))
 
-            edge_coloration = nx.greedy_color(rev_graph)
-            # Somehow the dictionary returned by nx.greedy_color shuffles the keys (rev_nodes[direction_ind])
-            # so the values (colors) need to be shuffled correctly.
-            paired = list(zip(edge_coloration.keys(), edge_coloration.values()))
-            paired_sorted = sorted(paired, key=lambda x: x[0])
-            _, reordered_colors = zip(*paired_sorted)
-            edge_colors[direction_ind] = reordered_colors
-
-        # Construct colored_edges (dictionary of edges of each direction and color)
-        for direction_ind in range(len(code.colored_edges)):
-            for i in range(len(code.edges[direction_ind])):
-                edge = list(code.edges[direction_ind][i])
-                color = edge_colors[direction_ind][i]
-
-                if color not in code.colored_edges[direction_ind]:
-                    code.colored_edges[direction_ind][color] = edge
-                else:
-                    code.colored_edges[direction_ind][color] += edge
-
-        for direction in list(code.direction_inds.keys()):
-            direction_ind = code.direction_inds[direction]
-            code.num_colors[direction] = len(list(code.colored_edges[direction_ind].keys()))
+        code.num_colors['E'] = len(code.colored_edges_E)
+        code.num_colors['N'] = len(code.colored_edges_N)
+        code.num_colors['S'] = len(code.colored_edges_S)
+        code.num_colors['W'] = len(code.colored_edges_W)
+        # Total number of entangling gate layers across all edge-color groups.
+        code.depth = sum(code.num_colors.values())
         return
 
     def get_cardinal_circuit(
@@ -163,16 +145,25 @@ class CardinalBuilder(CircuitBuilder):
             raise ValueError("basis must be 'Z' or 'X'")
         get_Z_detectors = True if basis == 'Z' or circuit_build_options.get_all_detectors else False
         get_X_detectors = True if basis == 'X' or circuit_build_options.get_all_detectors else False
-        directions = list(code.direction_inds.keys())
+        directions = ['E', 'N', 'S', 'W']
         circ = Circuit(code.all_qubits)
 
         def _add_stabilizer_round():
+            def _flatten_edge_pairs(edge_pairs):
+                return [q for control, target in edge_pairs for q in (control, target)]
+
+            colored_edges_by_direction = {
+                'E': code.colored_edges_E,
+                'N': code.colored_edges_N,
+                'S': code.colored_edges_S,
+                'W': code.colored_edges_W,
+            }
             circ.add_hadamard_layer(code.xcheck_qubits)
             for direction_ind in range(len(directions)):
                 direction = directions[direction_ind]
                 for color in range(code.num_colors[direction]):
-                    edges = code.colored_edges[direction_ind][color]
-                    circ.add_cnot_layer(edges)
+                    edges = colored_edges_by_direction[direction][color]
+                    circ.add_cnot_layer(_flatten_edge_pairs(edges))
             circ.add_hadamard_layer(code.xcheck_qubits)
             circ.add_measure_reset_layer(code.check_qubits)
             return

@@ -1,5 +1,8 @@
 """
 Bivariate bicycle (BB) code construction.
+
+Reference: https://github.com/gongaa/SlidingWindowDecoder
+Parts of the BB code and circuit-construction routines are adapted and modified from this repository.
 """
 
 import numpy as np
@@ -8,11 +11,13 @@ import stim
 from ..circuit import Circuit
 from ..gf2_util import compute_lz_and_lx
 from ..noise import ErrorModel
-from .circuit_construction import CircuitBuildOptions
+from .circuit_construction import CircuitBuildOptions, get_builder
 from .base import QldpcCode
 
 
 class BbCode(QldpcCode):
+    supported_strategies = {"custom", "zxcoloration"}
+
     def __init__(self, l, m, A_x_pows, A_y_pows, B_x_pows, B_y_pows):
         """
         :param l: Size of the x-shift (first cyclic dimension).
@@ -22,7 +27,7 @@ class BbCode(QldpcCode):
         :param B_x_pows: Powers for x terms in B(x, y).
         :param B_y_pows: Powers for y terms in B(x, y).
         """
-        # Reference: bivariate bicycle codes (BB). See the original BB construction papers.
+        # Reference: bivariate bicycle codes (BB). arXiv:2308.07915
         super().__init__()
 
         if l <= 0 or m <= 0:
@@ -60,7 +65,7 @@ class BbCode(QldpcCode):
 
     def build_circuit(
         self,
-        strategy="freeform",
+        strategy="custom",
         error_model=None,
         num_rounds=0,
         basis="Z",
@@ -70,32 +75,40 @@ class BbCode(QldpcCode):
         '''
         Build a circuit for this BB code using the selected construction strategy.
 
-        :param strategy: Circuit-construction strategy name (e.g., "freeform").
+        :param strategy: Circuit-construction strategy name (e.g., "custom").
         :param error_model: ErrorModel specifying idle/single-/two-qubit/SPAM noise.
         :param num_rounds: Number of noisy syndrome-extraction rounds after the zeroth round.
         :param basis: Logical storage/measurement basis, either "Z" or "X".
         :param circuit_build_options: CircuitBuildOptions controlling detector and noise toggles.
-        :param opts: Additional keyword arguments for BB freeform construction details.
+        :param opts: Additional keyword arguments for BB custom construction details.
         :return: Stim circuit.
         '''
-        if strategy != "freeform":
-            return super().build_circuit(
-                strategy=strategy,
+        if error_model is None:
+            error_model = ErrorModel()
+        if circuit_build_options is None:
+            circuit_build_options = CircuitBuildOptions()
+        elif not isinstance(circuit_build_options, CircuitBuildOptions):
+            raise TypeError("circuit_build_options must be a CircuitBuildOptions instance.")
+        
+        if strategy == "custom":
+            return self._build_custom_circuit(
                 error_model=error_model,
                 num_rounds=num_rounds,
                 basis=basis,
                 circuit_build_options=circuit_build_options,
-                **opts,
             )
-        return self._build_freeform_circuit(
-            error_model=error_model,
-            num_rounds=num_rounds,
-            basis=basis,
-            circuit_build_options=circuit_build_options,
-            **opts,
-        )
+        elif strategy == "zxcoloration":
+            builder = get_builder("zxcoloration", self)
+            return builder.get_coloration_circuit(
+                error_model=error_model,
+                num_rounds=num_rounds,
+                basis=basis,
+                circuit_build_options=circuit_build_options,
+            )
+        else:
+            return super().build_circuit(strategy=strategy, **opts)
 
-    def _build_freeform_circuit(
+    def _build_custom_circuit(
         self,
         error_model=None,
         num_rounds=0,
@@ -195,6 +208,7 @@ class BbCode(QldpcCode):
             r_data_offset, z_check_offset, A2_T, 'c'
         )
         edges_round7 = make_edges(x_check_offset, l_data_offset, A3, 't')
+        self.depth = 7
 
         def flatten(edges):
             return [q for edge in edges for q in edge]

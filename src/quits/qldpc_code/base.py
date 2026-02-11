@@ -11,6 +11,8 @@ from .circuit_construction import get_builder
 
 
 class QldpcCode:
+    supported_strategies = {"zxcoloration"}
+
     def __init__(self):
 
         self.hz, self.hx = None, None
@@ -71,13 +73,21 @@ class QldpcCode:
         builder = get_builder("cardinal", self)
         return builder.draw_graph(draw_edges=draw_edges)
 
-    def build_circuit(self, strategy="cardinal", **opts):
+    def build_circuit(self, strategy="zxcoloration", **opts):
+        if strategy == "cardinal" and strategy not in self.supported_strategies:
+            supported = ", ".join(sorted(self.supported_strategies))
+            msg = (
+                f"Error: strategy='cardinal' is not supported for {type(self).__name__}. "
+                f"Supported strategies: {supported}."
+            )
+            print(msg)
+            raise NotImplementedError(msg)
         builder = get_builder(strategy)
         return builder.build(self, **opts)
 
     def build_graph(self, **opts):
         warnings.warn(
-            "QldpcCode.build_graph is deprecated; use build_circuit(strategy='cardinal', ...) instead.",
+            "QldpcCode.build_graph is deprecated; use build_circuit(strategy='zxcoloration', ...) instead.",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -89,9 +99,9 @@ class QldpcCode:
         return builder.get_classical_edge_bools(h, seed)
 
     # Helper function for adding edges
-    def add_edge(self, edge_no, direction_ind, control, target):
+    def add_edge(self, direction, control, target):
         builder = get_builder("cardinal", self)
-        return builder.add_edge(edge_no, direction_ind, control, target)
+        return builder.add_edge(direction, control, target)
 
     def color_edges(self):
         builder = get_builder("cardinal", self)

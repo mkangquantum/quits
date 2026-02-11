@@ -12,6 +12,8 @@ from .base import QldpcCode
 
 
 class HgpCode(QldpcCode):
+    supported_strategies = {"cardinal", "zxcoloration"}
+
     def __init__(self, h1, h2, verbose=False):
         '''
         :param h1: Parity check matrix of the first classical code used to construct the hgp code
@@ -86,22 +88,32 @@ class HgpCode(QldpcCode):
         :param opts: Additional keyword arguments, e.g., seed for the cardinal strategy.
         :return: Stim circuit.
         '''
-        if strategy != "cardinal":
-            return super().build_circuit(strategy=strategy, **opts)
         if error_model is None:
             error_model = ErrorModel()
         if circuit_build_options is None:
             circuit_build_options = CircuitBuildOptions()
         elif not isinstance(circuit_build_options, CircuitBuildOptions):
             raise TypeError("circuit_build_options must be a CircuitBuildOptions instance.")
-        seed = opts.get("seed", 1)
-        return self._build_cardinal_circuit(
-            error_model=error_model,
-            num_rounds=num_rounds,
-            basis=basis,
-            circuit_build_options=circuit_build_options,
-            seed=seed,
-        )
+        
+        if strategy == "cardinal":
+            seed = opts.get("seed", 1)
+            return self._build_cardinal_circuit(
+                error_model=error_model,
+                num_rounds=num_rounds,
+                basis=basis,
+                circuit_build_options=circuit_build_options,
+                seed=seed,
+            )
+        elif strategy == "zxcoloration":
+            builder = get_builder("zxcoloration", self)
+            return builder.get_coloration_circuit(
+                error_model=error_model,
+                num_rounds=num_rounds,
+                basis=basis,
+                circuit_build_options=circuit_build_options,
+            )
+        else:
+            return super().build_circuit(strategy=strategy, **opts)
 
     def _build_cardinal_circuit(
         self,
@@ -162,23 +174,21 @@ class HgpCode(QldpcCode):
         self.zcheck_qubits = sorted(np.array(zcheck_qubits))
         self.xcheck_qubits = sorted(np.array(xcheck_qubits))
         self.check_qubits = np.concatenate((self.zcheck_qubits, self.xcheck_qubits))
-        self.all_qubits = sorted(np.array(data_qubits + zcheck_qubits + xcheck_qubits))
+        self.all_qubits = sorted(np.array(data_qubits + zcheck_qubits + xcheck_qubits))                
 
         hedge_bool_list = self.get_classical_edge_bools(self.h1, seed)
         vedge_bool_list = self.get_classical_edge_bools(self.h2, seed)
 
-        edge_no = 0
         for classical_edge in np.argwhere(self.h1 == 1):
             c0, c1 = classical_edge
             edge_bool = hedge_bool_list[(c0, c1)]
             for k in range(self.n2 + self.r2):
                 control, target = (k * (self.n1 + self.r1) + c0 + self.n1, k * (self.n1 + self.r1) + c1)
                 if (k < self.n2) ^ edge_bool:
-                    direction_ind = self.direction_inds['E']
+                    direction = 'E'
                 else:
-                    direction_ind = self.direction_inds['W']
-                self.add_edge(edge_no, direction_ind, control, target)
-                edge_no += 1
+                    direction = 'W'
+                self.add_edge(direction, control, target)
 
         for classical_edge in np.argwhere(self.h2 == 1):
             c0, c1 = classical_edge
@@ -186,11 +196,10 @@ class HgpCode(QldpcCode):
             for k in range(self.n1 + self.r1):
                 control, target = (k + c1 * (self.n1 + self.r1), k + (c0 + self.n2) * (self.n1 + self.r1))
                 if (k < self.n1) ^ edge_bool:
-                    direction_ind = self.direction_inds['N']
+                    direction = 'N'
                 else:
-                    direction_ind = self.direction_inds['S']
-                self.add_edge(edge_no, direction_ind, control, target)
-                edge_no += 1
+                    direction = 'S'
+                self.add_edge(direction, control, target)
 
         # Color the edges of self.graph
         self.color_edges()

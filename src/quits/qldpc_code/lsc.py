@@ -13,11 +13,14 @@ on the two diagonals.
 import numpy as np
 
 from ..noise import ErrorModel
+from .circuit_construction import get_builder
 from .circuit_construction.circuit_build_options import CircuitBuildOptions
 from .qlp import QlpPolyCode
 
 
 class LscCode(QlpPolyCode):
+    supported_strategies = {"cardinal", "zxcoloration"}
+
     def __init__(self, lift_size, length):
         """
         :param lift_size: L, circulant lift size.
@@ -66,14 +69,26 @@ class LscCode(QlpPolyCode):
             circuit_build_options = CircuitBuildOptions()
         elif not isinstance(circuit_build_options, CircuitBuildOptions):
             raise TypeError("circuit_build_options must be a CircuitBuildOptions instance.")
-        return super().build_circuit(
-            strategy=strategy,
-            error_model=error_model,
-            num_rounds=num_rounds,
-            basis=basis,
-            circuit_build_options=circuit_build_options,
-            **opts,
-        )
+        
+        if strategy == "cardinal":
+            seed = opts.get("seed", 1)
+            return self._build_cardinal_circuit(
+                error_model=error_model,
+                num_rounds=num_rounds,
+                basis=basis,
+                circuit_build_options=circuit_build_options,
+                seed=seed,
+            )
+        elif strategy == "zxcoloration":
+            builder = get_builder("zxcoloration", self)
+            return builder.get_coloration_circuit(
+                error_model=error_model,
+                num_rounds=num_rounds,
+                basis=basis,
+                circuit_build_options=circuit_build_options,
+            )
+        else:
+            return super().build_circuit(strategy=strategy, **opts)
 
 
 __all__ = ["LscCode"]

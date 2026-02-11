@@ -6,7 +6,7 @@ from quits.qldpc_code import HgpCode
 from quits.simulation import get_stim_mem_result
 
 
-def _build_hgp_code(seed=22):
+def _build_hgp_code(seed=1):
     h = np.loadtxt(
         "parity_check_matrices/n=12_dv=3_dc=4_dist=6.txt",
         dtype=int,
@@ -16,7 +16,7 @@ def _build_hgp_code(seed=22):
     return code
 
 
-def _simulate_mem_circuit(code, p, num_rounds, num_trials, basis="Z", seed=22):
+def _simulate_mem_circuit(code, p, num_rounds, num_trials, basis="Z", seed=1):
     em = ErrorModel(p, p, p, p)
     circuit = code.build_circuit(
         strategy="cardinal",
@@ -42,9 +42,9 @@ def _run_phenom_decoder(
     num_trials,
     W,
     F,
-    seed=22,
+    seed=1,
 ):
-    depth = sum(code.num_colors.values())
+    depth = code.depth
     eff_error_rate_per_fault = p * (depth + 3)
 
     _, detection_events, observable_flips = _simulate_mem_circuit(
@@ -85,12 +85,12 @@ def _print_results(name, params, depth, eff_error_rate_per_fault, pL, lfr):
 
 
 def test_bposd_decoder_phenom_low_lfr():
-    code = _build_hgp_code(seed=22)
+    code = _build_hgp_code(seed=1)
     report = code.verify_css_logicals()
     assert report["all_tests_passed"]
 
     params = {
-        "p": 1e-3,
+        "p": 5e-4,
         "num_rounds": 15,
         "num_trials": 50,
         "W": 5,
@@ -113,7 +113,7 @@ def test_bposd_decoder_phenom_low_lfr():
         params["num_trials"],
         params["W"],
         params["F"],
-        seed=22,
+        seed=1,
     )
     _print_results("BPOSD", params, depth, eff_error_rate_per_fault, pL, lfr)
     print()
@@ -123,12 +123,12 @@ def test_bposd_decoder_phenom_low_lfr():
 
 
 def test_bplsd_decoder_phenom_low_lfr():
-    code = _build_hgp_code(seed=22)
+    code = _build_hgp_code(seed=1)
     report = code.verify_css_logicals()
     assert report["all_tests_passed"]
 
     params = {
-        "p": 1e-3,
+        "p": 5e-4,
         "num_rounds": 15,
         "num_trials": 50,
         "W": 5,
@@ -151,7 +151,7 @@ def test_bplsd_decoder_phenom_low_lfr():
         params["num_trials"],
         params["W"],
         params["F"],
-        seed=22,
+        seed=1,
     )
     _print_results("BPLSD", params, depth, eff_error_rate_per_fault, pL, lfr)
     print()

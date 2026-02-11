@@ -12,6 +12,8 @@ from .base import QldpcCode
 
 
 class QlpCode(QldpcCode):
+    supported_strategies = {"cardinal", "zxcoloration"}
+
     def __init__(self, b1, b2, lift_size):
         '''
         :param b1: First base matrix used to construct the lp code. Each entry is the power of the monomial.
@@ -65,22 +67,31 @@ class QlpCode(QldpcCode):
         :param opts: Additional keyword arguments, e.g., seed for the cardinal strategy.
         :return: Stim circuit.
         '''
-        if strategy != "cardinal":
-            return super().build_circuit(strategy=strategy, **opts)
         if error_model is None:
             error_model = ErrorModel()
         if circuit_build_options is None:
             circuit_build_options = CircuitBuildOptions()
         elif not isinstance(circuit_build_options, CircuitBuildOptions):
             raise TypeError("circuit_build_options must be a CircuitBuildOptions instance.")
-        seed = opts.get("seed", 1)
-        return self._build_cardinal_circuit(
-            error_model=error_model,
-            num_rounds=num_rounds,
-            basis=basis,
-            circuit_build_options=circuit_build_options,
-            seed=seed,
-        )
+        if strategy == "cardinal":
+            seed = opts.get("seed", 1)
+            return self._build_cardinal_circuit(
+                error_model=error_model,
+                num_rounds=num_rounds,
+                basis=basis,
+                circuit_build_options=circuit_build_options,
+                seed=seed,
+            )
+        elif strategy == "zxcoloration":
+            builder = get_builder("zxcoloration", self)
+            return builder.get_coloration_circuit(
+                error_model=error_model,
+                num_rounds=num_rounds,
+                basis=basis,
+                circuit_build_options=circuit_build_options,
+            )
+        else:
+            return super().build_circuit(strategy=strategy, **opts)
 
     def _build_cardinal_circuit(
         self,
@@ -150,7 +161,6 @@ class QlpCode(QldpcCode):
         hedge_bool_list = self.get_classical_edge_bools(np.ones(self.b1.shape, dtype=int), seed)
         vedge_bool_list = self.get_classical_edge_bools(np.ones(self.b2.shape, dtype=int), seed)
 
-        edge_no = 0
         for i in range(self.m1):
             for j in range(self.n1):
                 shift = self.b1[i, j]
@@ -159,14 +169,13 @@ class QlpCode(QldpcCode):
                 for l in range(self.lift_size):
                     for k in range(self.n2 + self.m2):
                         if (k < self.n2) ^ edge_bool:
-                            direction_ind = self.direction_inds['E']
+                            direction = 'E'
                         else:
-                            direction_ind = self.direction_inds['W']
+                            direction = 'W'
 
                         control = (k * (self.n1 + self.m1) + self.n1 + i) * self.lift_size + (l + shift) % self.lift_size
                         target = (k * (self.n1 + self.m1) + j) * self.lift_size + l
-                        self.add_edge(edge_no, direction_ind, control, target)
-                        edge_no += 1
+                        self.add_edge(direction, control, target)
 
         for i in range(self.m2):
             for j in range(self.n2):
@@ -176,14 +185,13 @@ class QlpCode(QldpcCode):
                 for l in range(self.lift_size):
                     for k in range(self.n1 + self.m1):
                         if (k < self.n1) ^ edge_bool:
-                            direction_ind = self.direction_inds['N']
+                            direction = 'N'
                         else:
-                            direction_ind = self.direction_inds['S']
+                            direction = 'S'
 
                         control = (k + j * (self.n1 + self.m1)) * self.lift_size + l
                         target = (k + (i + self.n2) * (self.n1 + self.m1)) * self.lift_size + (l + shift) % self.lift_size
-                        self.add_edge(edge_no, direction_ind, control, target)
-                        edge_no += 1
+                        self.add_edge(direction, control, target)
 
         # Color the edges of self.graph
         self.color_edges()
@@ -196,6 +204,8 @@ class QlpCode(QldpcCode):
 
 
 class QlpPolyCode(QldpcCode):
+    supported_strategies = {"cardinal", "zxcoloration"}
+
     def __init__(self, b1, b2, lift_size):
         '''
         :param b1: First base matrix used to construct the lp code. Each entry is the list of powers of the polynomial terms.
@@ -279,22 +289,32 @@ class QlpPolyCode(QldpcCode):
         :param opts: Additional keyword arguments, e.g., seed for the cardinal strategy.
         :return: Stim circuit.
         '''
-        if strategy != "cardinal":
-            return super().build_circuit(strategy=strategy, **opts)
         if error_model is None:
             error_model = ErrorModel()
         if circuit_build_options is None:
             circuit_build_options = CircuitBuildOptions()
         elif not isinstance(circuit_build_options, CircuitBuildOptions):
             raise TypeError("circuit_build_options must be a CircuitBuildOptions instance.")
-        seed = opts.get("seed", 1)
-        return self._build_cardinal_circuit(
-            error_model=error_model,
-            num_rounds=num_rounds,
-            basis=basis,
-            circuit_build_options=circuit_build_options,
-            seed=seed,
-        )
+        
+        if strategy == "cardinal":
+            seed = opts.get("seed", 1)
+            return self._build_cardinal_circuit(
+                error_model=error_model,
+                num_rounds=num_rounds,
+                basis=basis,
+                circuit_build_options=circuit_build_options,
+                seed=seed,
+            )
+        elif strategy == "zxcoloration":
+            builder = get_builder("zxcoloration", self)
+            return builder.get_coloration_circuit(
+                error_model=error_model,
+                num_rounds=num_rounds,
+                basis=basis,
+                circuit_build_options=circuit_build_options,
+            )
+        else:
+            return super().build_circuit(strategy=strategy, **opts)
 
     def _build_cardinal_circuit(
         self,
@@ -364,7 +384,6 @@ class QlpPolyCode(QldpcCode):
         hedge_bool_list = self.get_classical_edge_bools(self.b1_placeholder, seed)
         vedge_bool_list = self.get_classical_edge_bools(self.b2_placeholder, seed)
 
-        edge_no = 0
         for i in range(self.m1):
             for j in range(self.n1):
                 if self.b1_placeholder[i, j] == 0:
@@ -374,15 +393,14 @@ class QlpPolyCode(QldpcCode):
                 for l in range(self.lift_size):
                     for k in range(self.n2 + self.m2):
                         if (k < self.n2) ^ edge_bool:
-                            direction_ind = self.direction_inds['E']
+                            direction = 'E'
                         else:
-                            direction_ind = self.direction_inds['W']
+                            direction = 'W'
 
                         for shift in self.b1[i][j]:
                             control = (k * (self.n1 + self.m1) + self.n1 + i) * self.lift_size + (l + shift) % self.lift_size
                             target = (k * (self.n1 + self.m1) + j) * self.lift_size + l
-                            self.add_edge(edge_no, direction_ind, control, target)
-                            edge_no += 1
+                            self.add_edge(direction, control, target)
 
         for i in range(self.m2):
             for j in range(self.n2):
@@ -393,15 +411,14 @@ class QlpPolyCode(QldpcCode):
                 for l in range(self.lift_size):
                     for k in range(self.n1 + self.m1):
                         if (k < self.n1) ^ edge_bool:
-                            direction_ind = self.direction_inds['N']
+                            direction = 'N'
                         else:
-                            direction_ind = self.direction_inds['S']
+                            direction = 'S'
 
                         for shift in self.b2[i][j]:
                             control = (k + j * (self.n1 + self.m1)) * self.lift_size + l
                             target = (k + (i + self.n2) * (self.n1 + self.m1)) * self.lift_size + (l + shift) % self.lift_size
-                            self.add_edge(edge_no, direction_ind, control, target)
-                            edge_no += 1
+                            self.add_edge(direction, control, target)
 
         # Color the edges of self.graph
         self.color_edges()

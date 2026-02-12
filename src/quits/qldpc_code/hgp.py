@@ -7,25 +7,22 @@ import numpy as np
 from ..noise import ErrorModel
 from .circuit_construction import get_builder
 from .circuit_construction.circuit_build_options import CircuitBuildOptions
-from ..gf2_util import gf2_nullspace_basis, gf2_coset_reps_rowspace, compute_lz_and_lx
+from ..gf2_util import gf2_nullspace_basis, gf2_coset_reps_rowspace
 from .base import QldpcCode
 
 
 class HgpCode(QldpcCode):
     supported_strategies = {"cardinal", "zxcoloration"}
 
-    def __init__(self, h1, h2, verbose=False):
+    def __init__(self, h1, h2):
         '''
         :param h1: Parity check matrix of the first classical code used to construct the hgp code
         :param h2: Parity check matrix of the second classical code used to construct the hgp code
-        :param verbose: If True, print construction details (e.g., when canonical logicals are used).
         '''
         # Reference: Tillich & Zemor, arXiv:0903.0566 (hypergraph product codes).
-        # Canonical logicals follow the HGP convention in arXiv:2204.10812.
         super().__init__()
 
         self.h1, self.h2 = h1, h2
-        self.verbose = verbose
         self.r1, self.n1 = h1.shape
         self.r2, self.n2 = h2.shape
 
@@ -37,33 +34,52 @@ class HgpCode(QldpcCode):
         self.l1 = gf2_nullspace_basis(self.h1)
         self.l2 = gf2_nullspace_basis(self.h2)
         self.k1, self.k2 = self.l1.shape[0], self.l2.shape[0]
+        self.l1t = gf2_nullspace_basis(self.h1.T)
+        self.l2t = gf2_nullspace_basis(self.h2.T)
+        self.k1t, self.k2t = self.l1t.shape[0], self.l2t.shape[0]
 
-        if self.r1 == self.n1 - self.k1 and self.r2 == self.n2 - self.k2:  # If both classical parity check matrices are full-rank
-            if self.verbose:
-                print("HgpCode: using canonical logical codewords.")
-            self.lz, self.lx = self.get_canonical_logicals()  # set logical operators in the canonical form
-        else:
-            self.lz, self.lx = compute_lz_and_lx(self.hz, self.hx)
+        self.lz, self.lx = self.get_canonical_logicals()
 
     def get_canonical_logicals(self):
         """
-        Canonical logicals for your HGP convention, assuming k1^T=k2^T=0.
-        Returns:
-          lz, lx: shape (k1*k2, num_data_qubits) as uint8.
-        """
-        E1 = gf2_coset_reps_rowspace(self.h1)  # (k1, n1) if H1 full row rank
-        E2 = gf2_coset_reps_rowspace(self.h2)  # (k2, n2)
+        Canonical logicals for the HGP convention, including both sectors:
+          - VV sector: k1*k2 logicals
+          - CC sector: k1^T*k2^T logicals
+        See arXiv:2204.10812.
 
-        lz = np.zeros((self.k1 * self.k2, self.hz.shape[1]), dtype=np.uint8)
-        lx = np.zeros((self.k1 * self.k2, self.hx.shape[1]), dtype=np.uint8)
+        Returns:
+          lz, lx: shape (k1*k2 + k1^T*k2^T, num_data_qubits) as uint8.
+        """
+        E1 = gf2_coset_reps_rowspace(self.h1)      # (k1, n1)
+        E2 = gf2_coset_reps_rowspace(self.h2)      # (k2, n2)
+        E1t = gf2_coset_reps_rowspace(self.h1.T)   # (k1^T, r1)
+        E2t = gf2_coset_reps_rowspace(self.h2.T)   # (k2^T, r2)
+
+        k_vv = self.k1 * self.k2
+        k_cc = self.k1t * self.k2t
+        k_total = k_vv + k_cc
+        split = self.n1 * self.n2
+
+        lz = np.zeros((k_total, self.hz.shape[1]), dtype=np.uint8)
+        lx = np.zeros((k_total, self.hx.shape[1]), dtype=np.uint8)
 
         cnt = 0
         for i in range(self.k2):
             for j in range(self.k1):
-                # Z: (E2_i ⊗ L1_j | 0)
-                lz[cnt, :self.n1 * self.n2] = np.kron(E2[i, :], self.l1[j, :]) & 1
-                # X: (L2_i ⊗ E1_j | 0)
-                lx[cnt, :self.n1 * self.n2] = np.kron(self.l2[i, :], E1[j, :]) & 1
+                # VV sector
+                # Z: (E2_i \otimes L1_j | 0)
+                lz[cnt, :split] = np.kron(E2[i, :], self.l1[j, :]) & 1
+                # X: (L2_i \otimes E1_j | 0)
+                lx[cnt, :split] = np.kron(self.l2[i, :], E1[j, :]) & 1
+                cnt += 1
+
+        for i in range(self.k2t):
+            for j in range(self.k1t):
+                # CC sector
+                # Z: (0 | L2^T_i \otimes E1^T_j)
+                lz[cnt, split:] = np.kron(self.l2t[i, :], E1t[j, :]) & 1
+                # X: (0 | E2^T_i \otimes L1^T_j)
+                lx[cnt, split:] = np.kron(E2t[i, :], self.l1t[j, :]) & 1
                 cnt += 1
 
         return lz, lx

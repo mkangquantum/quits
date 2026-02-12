@@ -1,33 +1,65 @@
-> 🚀 **New Release Available!** 
->**v0.5.0** - QUITS is now actually modular. [Check out the latest release notes »](https://github.com/mkangquantum/quits/releases/tag/v0.5.0)
+# QUITS: A Modular QLDPC Code circUIT Simulator
 
+QUITS is a modular and flexible circuit-level simulator for quantum low-density parity-check (QLDPC) codes. It is designed to combine code construction, circuit generation, decoding, and noise modeling in a composable workflow.
 
-# QUITS: A modular Qldpc code circUIT Simulator
+## Modular Architecture
 
-QUITS is a modular and flexible circuit-level simulator for quantum low-density parity check (QLDPC) codes. Its design allows users to freely combine LDPC code constructions, syndrome extraction circuits, decoding algorithms, and noise models, enabling comprehensive and customizable studies of the performance of QLDPC codes under circuit-level noise. QUITS supports several leading QLDPC families, including 
-- HyperGraph Product (HGP) codes 
-- Quasi-cyclic Lifted Product (QLP) codes, and 
-- Balanced Product Cyclic (BPC) codes. 
+QUITS is organized into clear modules:
 
-Check out [arXiv:2504.02673](https://arxiv.org/abs/2504.02673) for a detailed description of our package. 
+- `quits.qldpc_code`: QLDPC code families and code objects.
+- `quits.qldpc_code.circuit_construction`: circuit-construction strategies and options.
+- `quits.decoder`: sliding-window and related decoding routines.
+- `quits.noise.ErrorModel`: structured noise-model configuration for circuit generation.
 
-QUITS is best used together with the following libraries:
-- [Stim](https://github.com/quantumlib/Stim) (fast stabilizer circuit simulator) 
-- [LDPC](https://github.com/quantumgizmos/ldpc) (BP-OSD, BP-LSD decoders for QLDPC codes)
+Supported code families include:
 
-See [doc/intro.ipynb](https://github.com/mkangquantum/quits/blob/main/doc/intro.ipynb) to get started!
+- Hypergraph Product (HGP) codes
+- Quasi-cyclic Lifted Product (QLP) codes
+- Balanced Product Cyclic (BPC) codes
+- Lift-connected Surface-like (LSC) codes
+- Bivariate Bicycle (BB) codes
+- **Any code**, given parity check matrices
 
-Since the release of QUITS, we acknowledge the feedback and suggestions from Ryan Tiew, Josias Old, and qodesign that helped improve the package. If you’re working on QLDPC codes, decoders, or noise modeling, it'd be great if you could try QUITS, file issues, or contribute features. Let’s build better tools for scalable, fault-tolerant quantum computing together ⚛️
+For background on QUITS, see [arXiv:2504.02673](https://arxiv.org/abs/2504.02673).
 
-## License
-This project is licensed under the MIT License.
+## Circuit Construction Strategies
+
+| Code family | `zxcoloration` | `cardinal` | `custom` |
+| --- | --- | --- | --- |
+| HGP | yes | yes | no |
+| QLP | yes | yes | no |
+| BPC | yes | yes | no |
+| LSC | yes | yes | no |
+| BB | yes | no | yes |
+| Any | yes | no | no |
+
+- `zxcoloration` is available for all QLDPC codes.
+- `cardinal` is available for HGP, QLP, BPC, and LSC.
+- `custom` is available for BB code construction.
 
 ## Installation
 
-To install this package from GitHub, run installation command
-   ```
-   pip install quits
-   ```
+Conda-first workflow:
+
+```bash
+conda create -n quits python=3.12 -y
+conda activate quits
+pip install quits
+```
+
+For source/development installs from this repository:
+
+```bash
+pip install -e .
+```
+
+## Quick Start Docs
+
+- [doc/00_getting_started.ipynb](doc/00_getting_started.ipynb)
+
+## License
+
+This project is licensed under the MIT License.
 
 ## How to Cite Our Work
 
@@ -47,3 +79,4 @@ If you use our work in your research, please cite it using the following referen
   month = dec,
   year = {2025}
 }
+```

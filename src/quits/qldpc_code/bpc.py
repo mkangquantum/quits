@@ -15,7 +15,7 @@ from .qldpc_util import get_circulant_mat, lift
 class BpcCode(QldpcCode):
     supported_strategies = {"cardinal", "zxcoloration"}
 
-    def __init__(self, p1, p2, lift_size, factor, canonical_basis="Z", verbose=False):
+    def __init__(self, p1, p2, lift_size, factor, canonical_basis="Z"):
         '''
         :param p1: First polynomial used to construct the bp code. Each entry of the list is the power of each polynomial term.
                    e.g. p1 = [0, 1, 5] represents the polynomial 1 + x + x^5
@@ -24,7 +24,6 @@ class BpcCode(QldpcCode):
         :param factor: Power of the monomial generator of the cyclic subgroup that is factored out by the balanced product.
                        e.g. if factor == 3, cyclic subgroup <x^3> is factored out.
         :param canonical_basis: Basis choice for canonical logicals; "Z" or "X".
-        :param verbose: If True, print construction details (e.g., when canonical logicals are used).
         :note: BPC code does not currently support q = 1 (i.e., lift_size == factor).
         '''
         # Reference: R. Tiew & N. P. Breuckmann, arXiv:2411.03302 (balanced product cyclic codes).
@@ -34,7 +33,6 @@ class BpcCode(QldpcCode):
         self.p1, self.p2 = p1, p2
         self.lift_size = lift_size
         self.factor = factor
-        self.verbose = verbose
         self.canonical_basis = canonical_basis.upper()
 
         b1 = np.zeros((self.factor, self.factor), dtype=int)
@@ -68,8 +66,6 @@ class BpcCode(QldpcCode):
                 "BpcCode does not currently support q = 1 (lift_size == factor)."
             )
         if q % 2 == 1:
-            if self.verbose:
-                print("BpcCode: using canonical logical codewords (q is odd).")
             self.lz, self.lx = self.get_canonical_logicals(canonical_basis=self.canonical_basis)
         else:
             self.lz, self.lx = compute_lz_and_lx(self.hz, self.hx)

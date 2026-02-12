@@ -202,6 +202,23 @@ def test_hgpcode_zxcoloration_circuit_low_lfr():
     assert lfr <= 0.08
 
 
+def test_hgp_toric_d3_non_full_rank_canonical_logicals_shape():
+    d = 3
+    H = np.zeros((d, d), dtype=int)
+    for i in range(d):
+        H[i, i] = 1
+        H[i, (i + 1) % d] = 1
+
+    code = HgpCode(H, H)
+
+    assert code.hx.shape == (9, 18)
+    assert code.hz.shape == (9, 18)
+    assert code.lx.shape == (2, 18)
+    assert code.lz.shape == (2, 18)
+
+    report = code.verify_css_logicals()
+    assert report["all_tests_passed"]
+
 
 def test_qlp_code_circuit_low_lfr():
     lift_size = 16

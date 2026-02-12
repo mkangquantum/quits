@@ -2,7 +2,9 @@
 
 QUITS is a modular and flexible circuit-level simulator for quantum low-density parity-check (QLDPC) codes. It is designed so users can choose and mix different options for each module independently: code construction, circuit strategy, decoder, and noise model.
 
-![Example QLDPC Tanner graph with cardinal circuit scheduling](doc/assets/readme_graph.png)
+![BPC Tanner graph with cardinal circuit scheduling](doc/assets/readme_graph.png)
+
+*Example QLDPC code (Balanced Product Cyclic code) Tanner graph with cardinal circuit scheduling.*
 
 ## Modular Architecture
 

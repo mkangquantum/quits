@@ -9,7 +9,7 @@ QUITS is organized into clear modules, enabling flexible choice for each compone
 - `quits.qldpc_code`: QLDPC code families, code objects, and bring-your-own parity-check-matrix workflows.
 - `quits.qldpc_code.circuit_construction`: circuit-construction strategies and options.
 - `quits.decoder`: sliding-window phenomenological/circuit-level decoders, with flexibility in inner decoders (e.g. BP-OSD, BP-LSD)
-- `quits.noise.ErrorModel`: structured noise-model configuration (e.g. idling/single-qubit/two-qubit/SPAM error rates) for circuit generation.
+- `quits.noise.ErrorModel`: structured noise-model configuration (e.g. idling/single-qubit-gate/two-qubit-gate/SPAM error rates) for circuit generation.
 
 For HGP codes, QUITS also includes a classical LDPC generator in `quits.ldpc_util`, including `generate_ldpc` and `generate_ldpc_good_girth`.
 

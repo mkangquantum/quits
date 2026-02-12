@@ -144,7 +144,6 @@ class HgpCode(QldpcCode):
                 node = i + j * (self.n1 + self.r1)
                 data_qubits += [node]
                 self.graph.add_node(node, pos=(i, j))
-                self.node_colors += ['blue']
 
         start = self.n1
         for i in range(self.r1):
@@ -152,7 +151,6 @@ class HgpCode(QldpcCode):
                 node = start + i + j * (self.n1 + self.r1)
                 xcheck_qubits += [node]
                 self.graph.add_node(node, pos=(i + self.n1, j))
-                self.node_colors += ['purple']
 
         start = self.n2 * (self.n1 + self.r1)
         for i in range(self.n1):
@@ -160,7 +158,6 @@ class HgpCode(QldpcCode):
                 node = start + i + j * (self.n1 + self.r1)
                 zcheck_qubits += [node]
                 self.graph.add_node(node, pos=(i, j + self.n2))
-                self.node_colors += ['green']
 
         start = self.n2 * (self.n1 + self.r1) + self.n1
         for i in range(self.r1):
@@ -168,7 +165,6 @@ class HgpCode(QldpcCode):
                 node = start + i + j * (self.n1 + self.r1)
                 data_qubits += [node]
                 self.graph.add_node(node, pos=(i + self.n1, j + self.n2))
-                self.node_colors += ['blue']
 
         self.data_qubits = sorted(np.array(data_qubits))
         self.zcheck_qubits = sorted(np.array(zcheck_qubits))

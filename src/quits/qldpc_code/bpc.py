@@ -211,32 +211,32 @@ class BpcCode(QldpcCode):
             for l in range(self.lift_size):
                 node = i * self.lift_size + l
                 data_qubits += [node]
-                self.graph.add_node(node, pos=(2 * i, 0))
-                self.node_colors += ['blue']
+                # Bottom left: data qubits
+                self.graph.add_node(node, pos=(l, i))
 
         start = self.factor * self.lift_size
         for i in range(self.factor):
             for l in range(self.lift_size):
                 node = start + i * self.lift_size + l
                 xcheck_qubits += [node]
-                self.graph.add_node(node, pos=(2 * i + 1, 0))
-                self.node_colors += ['purple']
+                # Bottom right: X-check qubits
+                self.graph.add_node(node, pos=(self.lift_size + l, i))
 
         start = 2 * self.factor * self.lift_size
         for i in range(self.factor):
             for l in range(self.lift_size):
                 node = start + i * self.lift_size + l
                 zcheck_qubits += [node]
-                self.graph.add_node(node, pos=(2 * i, 1))
-                self.node_colors += ['green']
+                # Top left: Z-check qubits
+                self.graph.add_node(node, pos=(l, self.factor + i))
 
         start = 3 * self.factor * self.lift_size
         for i in range(self.factor):
             for l in range(self.lift_size):
                 node = start + i * self.lift_size + l
                 data_qubits += [node]
-                self.graph.add_node(node, pos=(2 * i + 1, 1))
-                self.node_colors += ['blue']
+                # Top right: data qubits
+                self.graph.add_node(node, pos=(self.lift_size + l, self.factor + i))
 
         self.data_qubits = sorted(np.array(data_qubits))
         self.zcheck_qubits = sorted(np.array(zcheck_qubits))

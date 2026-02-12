@@ -2,6 +2,7 @@ import networkx as nx
 import numpy as np
 import stim
 
+# Reference: Q. Xu et al., arXiv:2308.08648 
 from ...circuit import Circuit
 from ...noise import ErrorModel
 from .base import CircuitBuilder

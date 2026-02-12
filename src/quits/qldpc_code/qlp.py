@@ -124,7 +124,6 @@ class QlpCode(QldpcCode):
                     node = (i + j * (self.n1 + self.m1)) * self.lift_size + l
                     data_qubits += [node]
                     self.graph.add_node(node, pos=(i, j))
-                    self.node_colors += ['blue']
 
         start = self.n1 * self.lift_size
         for i in range(self.m1):
@@ -133,7 +132,6 @@ class QlpCode(QldpcCode):
                     node = start + (i + j * (self.n1 + self.m1)) * self.lift_size + l
                     xcheck_qubits += [node]
                     self.graph.add_node(node, pos=(i + self.n1, j))
-                    self.node_colors += ['purple']
 
         start = self.n2 * (self.n1 + self.m1) * self.lift_size
         for i in range(self.n1):
@@ -142,7 +140,6 @@ class QlpCode(QldpcCode):
                     node = start + (i + j * (self.n1 + self.m1)) * self.lift_size + l
                     zcheck_qubits += [node]
                     self.graph.add_node(node, pos=(i, j + self.n2))
-                    self.node_colors += ['green']
 
         start = (self.n2 * (self.n1 + self.m1) + self.n1) * self.lift_size
         for i in range(self.m1):
@@ -151,7 +148,6 @@ class QlpCode(QldpcCode):
                     node = start + (i + j * (self.n1 + self.m1)) * self.lift_size + l
                     data_qubits += [node]
                     self.graph.add_node(node, pos=(i + self.n1, j + self.n2))
-                    self.node_colors += ['blue']
 
         self.data_qubits = sorted(np.array(data_qubits))
         self.zcheck_qubits = sorted(np.array(zcheck_qubits))
@@ -347,7 +343,6 @@ class QlpPolyCode(QldpcCode):
                     node = (i + j * (self.n1 + self.m1)) * self.lift_size + l
                     data_qubits += [node]
                     self.graph.add_node(node, pos=(i, j))
-                    self.node_colors += ['blue']
 
         start = self.n1 * self.lift_size
         for i in range(self.m1):
@@ -356,7 +351,6 @@ class QlpPolyCode(QldpcCode):
                     node = start + (i + j * (self.n1 + self.m1)) * self.lift_size + l
                     xcheck_qubits += [node]
                     self.graph.add_node(node, pos=(i + self.n1, j))
-                    self.node_colors += ['purple']
 
         start = self.n2 * (self.n1 + self.m1) * self.lift_size
         for i in range(self.n1):
@@ -365,7 +359,6 @@ class QlpPolyCode(QldpcCode):
                     node = start + (i + j * (self.n1 + self.m1)) * self.lift_size + l
                     zcheck_qubits += [node]
                     self.graph.add_node(node, pos=(i, j + self.n2))
-                    self.node_colors += ['green']
 
         start = (self.n2 * (self.n1 + self.m1) + self.n1) * self.lift_size
         for i in range(self.m1):
@@ -374,7 +367,6 @@ class QlpPolyCode(QldpcCode):
                     node = start + (i + j * (self.n1 + self.m1)) * self.lift_size + l
                     data_qubits += [node]
                     self.graph.add_node(node, pos=(i + self.n1, j + self.n2))
-                    self.node_colors += ['blue']
 
         self.data_qubits = sorted(np.array(data_qubits))
         self.zcheck_qubits = sorted(np.array(zcheck_qubits))

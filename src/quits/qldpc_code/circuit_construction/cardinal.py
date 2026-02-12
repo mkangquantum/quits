@@ -22,26 +22,147 @@ class CardinalBuilder(CircuitBuilder):
         self.build_graph(**opts)
         return self.code.graph
 
-    # Draw the Tanner graph of the code.
-    def draw_graph(self, draw_edges=True):
+    # Draw the Tanner graph node-only, direction, or layer-color view.
+    def draw_graph(
+        self,
+        part="node",
+        draw_edges=True,
+        x_scale=3.0,
+        y_scale=3.0,
+        node_size=100,
+        font_size=8,
+        figsize=None,
+    ):
         code = self.code
-        pos = nx.get_node_attributes(code.graph, 'pos')
-        if not draw_edges:
-            nx.draw(code.graph, pos, node_color=code.node_colors, with_labels=True, font_color='white')
+        part = part.lower()
+        if part not in ("node", "color", "direction"):
+            raise ValueError("For cardinal draw_graph, part must be one of: node, color, direction.")
+        if code is None or not hasattr(code, "graph"):
+            raise ValueError("CardinalBuilder.draw_graph requires an initialized code graph.")
+
+        graph = code.graph
+        pos = nx.get_node_attributes(graph, "pos")
+        if x_scale != 1.0 or y_scale != 1.0:
+            pos = {k: (v[0] * x_scale, v[1] * y_scale) for k, v in pos.items()}
+
+        nodes = list(graph.nodes())
+        data_set = set(int(q) for q in code.data_qubits)
+        zcheck_set = set(int(q) for q in code.zcheck_qubits)
+        xcheck_set = set(int(q) for q in code.xcheck_qubits)
+        def _node_color(node):
+            if node in data_set:
+                return "blue"
+            if node in zcheck_set:
+                return "green"
+            if node in xcheck_set:
+                return "purple"
+            return "gray"
+        node_colors = [_node_color(node) for node in nodes]
+
+        if figsize is not None:
+            try:
+                import matplotlib.pyplot as plt
+                plt.figure(figsize=figsize)
+            except ImportError:
+                pass
+
+        if part == "node":
+            # draw_edges is kept for API compatibility with ZXColorationBuilder.draw_graph.
+            nx.draw(
+                graph,
+                pos,
+                nodelist=nodes,
+                node_color=node_colors,
+                edgelist=[],
+                node_size=node_size,
+                font_size=font_size,
+                with_labels=True,
+                font_color="white",
+            )
             return
 
-        edges = code.graph.edges()
-        edge_colors = [code.graph[u][v]['color'] for u, v in edges]
-        code.graph.add_edges_from(edges)
-        nx.draw(code.graph, pos, node_color=code.node_colors, edge_color=edge_colors, with_labels=True, font_color='white')
+        if part == "direction":
+            direction_color_map = {
+                "E": "tab:green",
+                "N": "tab:blue",
+                "S": "tab:orange",
+                "W": "tab:red",
+            }
+            direction_by_edge = {}
+            for direction in ("E", "N", "S", "W"):
+                for u, v in getattr(code, f"edges_{direction}", []):
+                    direction_by_edge[frozenset((u, v))] = direction
+
+            edges = list(graph.edges())
+            edge_colors = [
+                direction_color_map.get(direction_by_edge.get(frozenset((u, v))), "tab:gray")
+                for u, v in edges
+            ]
+
+            nx.draw(
+                graph,
+                pos,
+                nodelist=nodes,
+                node_color=node_colors,
+                edgelist=edges,
+                edge_color=edge_colors,
+                node_size=node_size,
+                font_size=font_size,
+                with_labels=True,
+                font_color="white",
+            )
+            return
+
+        # part == "color": color each edge by its CNOT layer in the cardinal schedule.
+        palette = [
+            "tab:blue", "tab:orange", "tab:green", "tab:red",
+            "tab:purple", "tab:brown", "tab:pink", "tab:gray",
+            "tab:olive", "tab:cyan", "gold", "navy",
+            "teal", "crimson", "darkorange", "slateblue",
+            "seagreen", "indigo", "peru", "darkcyan",
+            "firebrick", "darkgreen", "sienna", "dodgerblue",
+        ]
+
+        layer_index_by_edge = {}
+        layer = 0
+        direction_order = ("E", "N", "S", "W")
+        colored_edges_by_direction = {
+            "E": getattr(code, "colored_edges_E", {}),
+            "N": getattr(code, "colored_edges_N", {}),
+            "S": getattr(code, "colored_edges_S", {}),
+            "W": getattr(code, "colored_edges_W", {}),
+        }
+        num_colors = getattr(code, "num_colors", {"E": 0, "N": 0, "S": 0, "W": 0})
+        for direction in direction_order:
+            for color in range(num_colors.get(direction, 0)):
+                for u, v in colored_edges_by_direction[direction].get(color, []):
+                    layer_index_by_edge[frozenset((u, v))] = layer
+                layer += 1
+
+        edges = list(graph.edges())
+        edge_colors = [
+            palette[layer_index_by_edge.get(frozenset((u, v)), 0) % len(palette)]
+            for u, v in edges
+        ]
+
+        nx.draw(
+            graph,
+            pos,
+            nodelist=nodes,
+            node_color=node_colors,
+            edgelist=edges,
+            edge_color=edge_colors,
+            node_size=node_size,
+            font_size=font_size,
+            with_labels=True,
+            font_color="white",
+        )
         return
 
     def build_graph(self, **opts):
         code = self.code
         code.graph = nx.Graph()
-        code.direction_colors = {'E': 'green', 'N': 'blue', 'S': 'orange', 'W': 'red'}
 
-        code.node_colors = []  # 'blue' for data qubits, 'green' for zcheck qubits, 'purple' for xcheck qubits
         code.edges_E = []  # edges of the Tanner graph of east direction
         code.edges_N = []  # edges of the Tanner graph of north direction
         code.edges_S = []  # edges of the Tanner graph of south direction
@@ -89,7 +210,7 @@ class CardinalBuilder(CircuitBuilder):
             code.edges_W += [edge]
         else:
             raise ValueError(f"Unknown direction: {direction}")
-        code.graph.add_edge(control, target, color=code.direction_colors[direction])
+        code.graph.add_edge(control, target)
         return
 
     def color_edges(self):

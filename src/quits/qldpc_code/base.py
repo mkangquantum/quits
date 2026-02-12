@@ -73,9 +73,26 @@ class QldpcCode:
         return _lift_enc(lift_size, h_base_enc, h_base_placeholder)
 
     # Draw the Tanner graph of the code.
-    def draw_graph(self, draw_edges=True):
+    def draw_graph(
+        self,
+        part="node",
+        draw_edges=True,
+        x_scale=3.0,
+        y_scale=3.0,
+        node_size=100,
+        font_size=8,
+        figsize=None,
+    ):
         builder = get_builder("cardinal", self)
-        return builder.draw_graph(draw_edges=draw_edges)
+        return builder.draw_graph(
+            part=part,
+            draw_edges=draw_edges,
+            x_scale=x_scale,
+            y_scale=y_scale,
+            node_size=node_size,
+            font_size=font_size,
+            figsize=figsize,
+        )
 
     def build_circuit(self, strategy="zxcoloration", **opts):
         if strategy == "zxcoloration":

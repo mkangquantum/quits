@@ -20,7 +20,7 @@ Supported code families include:
 - [Balanced Product Cyclic (BPC) codes](doc/01A_codes_basics.ipynb#balanced-product-cyclic-bpc-code-parameters)
 - [Lift-Connected Surface (LCS) codes](doc/01A_codes_basics.ipynb#lift-connected-surface-lcs-code-parameters)
 - [Bivariate Bicycle (BB) codes](doc/01A_codes_basics.ipynb#bivariate-bicycle-bb-code-parameters)
-- **Any code**, if you bring the parity check matrices
+- [**Any code**, if you bring the parity check matrices](doc/01B_make_my_own_code.ipynb)
 
 For background on QUITS, see [arXiv:2504.02673](https://arxiv.org/abs/2504.02673).
 

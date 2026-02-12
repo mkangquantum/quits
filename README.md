@@ -28,12 +28,6 @@ Supported code families include:
 
 For background on QUITS, see [arXiv:2504.02673](https://arxiv.org/abs/2504.02673).
 
-## Recommended Companion Libraries
-
-QUITS is best used together with the following libraries:
-
-- [Stim](https://github.com/quantumlib/Stim) (fast stabilizer circuit simulator)
-- [LDPC](https://github.com/quantumgizmos/ldpc) (BP-OSD, BP-LSD decoders for QLDPC codes)
 
 ## Circuit Construction Strategies
 
@@ -49,6 +43,14 @@ QUITS is best used together with the following libraries:
 - [`zxcoloration`](doc/02C_zxcoloration_circuit_generation.ipynb) is available for all QLDPC codes.
 - [`cardinal`](doc/02B_cardinal_circuit_generation.ipynb) is available for HGP, QLP, BPC, and LCS.
 - [`custom`](doc/02A_custom_circuit_generation.ipynb) is available for BB code construction.
+
+
+## Recommended Companion Libraries
+
+QUITS is best used together with the following libraries:
+
+- [Stim](https://github.com/quantumlib/Stim) (fast stabilizer circuit simulator)
+- [LDPC](https://github.com/quantumgizmos/ldpc) (BP-OSD, BP-LSD decoders for QLDPC codes)
 
 ## Installation
 

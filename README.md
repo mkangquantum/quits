@@ -2,13 +2,15 @@
 
 QUITS is a modular and flexible circuit-level simulator for quantum low-density parity-check (QLDPC) codes. It is designed so users can choose and mix different options for each module independently: code construction, circuit strategy, decoder, and noise model.
 
+![Example QLDPC Tanner graph with cardinal circuit scheduling](doc/assets/readme_graph.png)
+
 ## Modular Architecture
 
 QUITS is organized into clear modules, enabling flexible choice for each component:
 
 - `quits.qldpc_code`: QLDPC code families, code objects, and bring-your-own parity-check-matrix workflows.
 - `quits.qldpc_code.circuit_construction`: circuit-construction strategies and options.
-- `quits.decoder`: sliding-window phenomenological/circuit-level decoders, with flexibility in inner decoders (e.g. BP-OSD, BP-LSD)
+- `quits.decoder`: sliding-window phenomenological/circuit-level decoders, with flexibility in inner decoders (e.g. BP-OSD, BP-LSD, bring-your-own decoder).
 - `quits.noise.ErrorModel`: structured noise-model configuration (e.g. idling/single-qubit-gate/two-qubit-gate/SPAM error rates) for circuit generation.
 
 For HGP codes, QUITS also includes a classical LDPC generator in `quits.ldpc_util`, including `generate_ldpc` and `generate_ldpc_good_girth`.

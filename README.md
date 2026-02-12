@@ -70,6 +70,10 @@ pip install -e .
 
 - [doc/00_getting_started.ipynb](doc/00_getting_started.ipynb)
 
+## Acknowledgments
+
+This project is based on [*QUITS: A modular Qldpc code circUIT Simulator*](https://doi.org/10.22331/q-2025-12-05-1931), originally developed by Mingyu Kang, Yingjia Lin, Hanwen Yao, Mert Gökduman, Arianna Meinking, and Kenneth R. Brown in the [Brown Lab](https://brownlab.pratt.duke.edu/) at the Duke Quantum Center.
+
 Since the release of QUITS, we acknowledge the feedback and suggestions from Ryan Tiew, Josias Old, and qodesign that helped improve the package. If you’re working on QLDPC codes, decoders, or noise modeling, it'd be great if you could try QUITS, file issues, or contribute features. Let’s build better tools for scalable, fault-tolerant quantum computing together ⚛️
 
 ## License

@@ -19,11 +19,11 @@ For HGP codes, QUITS also includes a classical LDPC generator in `quits.ldpc_uti
 
 Supported code families include:
 
-- [Hypergraph Product (HGP) codes](doc/01A_codes_basics.ipynb#hgp-code)
-- [Quasi-cyclic Lifted Product (QLP) codes](doc/01A_codes_basics.ipynb#qlp-code)
-- [Balanced Product Cyclic (BPC) codes](doc/01A_codes_basics.ipynb#bpc-code)
-- [Lift-Connected Surface (LCS) codes](doc/01A_codes_basics.ipynb#lcs-code)
-- [Bivariate Bicycle (BB) codes](doc/01A_codes_basics.ipynb#bb-code)
+- [Hypergraph Product (HGP) codes](doc/01A_codes_basics.md#hgp-code)
+- [Quasi-cyclic Lifted Product (QLP) codes](doc/01A_codes_basics.md#qlp-code)
+- [Balanced Product Cyclic (BPC) codes](doc/01A_codes_basics.md#bpc-code)
+- [Lift-Connected Surface (LCS) codes](doc/01A_codes_basics.md#lcs-code)
+- [Bivariate Bicycle (BB) codes](doc/01A_codes_basics.md#bb-code)
 - [**Any code**, if you bring the parity check matrices](doc/01B_make_my_own_code.ipynb)
 
 For background on QUITS, see [arXiv:2504.02673](https://arxiv.org/abs/2504.02673).

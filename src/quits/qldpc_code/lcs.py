@@ -8,6 +8,8 @@ We parameterize the code by:
 The base matrix has shape (l, l + 1) and uses polynomial entries:
     I  and  I + P
 on the two diagonals.
+
+Reference: arXiv:2401.02911
 """
 
 import numpy as np
@@ -18,7 +20,7 @@ from .circuit_construction.circuit_build_options import CircuitBuildOptions
 from .qlp import QlpPolyCode
 
 
-class LscCode(QlpPolyCode):
+class LcsCode(QlpPolyCode):
     supported_strategies = {"cardinal", "zxcoloration"}
 
     def __init__(self, lift_size, length):
@@ -91,4 +93,4 @@ class LscCode(QlpPolyCode):
             return super().build_circuit(strategy=strategy, **opts)
 
 
-__all__ = ["LscCode"]
+__all__ = ["LcsCode"]

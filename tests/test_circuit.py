@@ -2,7 +2,7 @@ import numpy as np
 import stim
 from quits.circuit import check_overlapping_CX
 from quits.noise import ErrorModel
-from quits.qldpc_code import BbCode, HgpCode, LscCode, QlpCode
+from quits.qldpc_code import BbCode, HgpCode, LcsCode, QlpCode
 
 
 def test_check_overlapping_cx_hgp_prints_when_verbose():

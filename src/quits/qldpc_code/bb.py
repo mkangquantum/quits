@@ -13,6 +13,7 @@ from ..gf2_util import compute_lz_and_lx
 from ..noise import ErrorModel
 from .circuit_construction import CircuitBuildOptions, get_builder
 from .base import QldpcCode
+from .qldpc_util import get_circulant_mat
 
 
 class BbCode(QldpcCode):
@@ -37,8 +38,8 @@ class BbCode(QldpcCode):
         self.A_x_pows, self.A_y_pows = A_x_pows, A_y_pows
         self.B_x_pows, self.B_y_pows = B_x_pows, B_y_pows
 
-        S_l = self.get_circulant_mat(self.l, -1)
-        S_m = self.get_circulant_mat(self.m, -1)
+        S_l = get_circulant_mat(self.l, -1)
+        S_m = get_circulant_mat(self.m, -1)
 
         x = np.kron(S_l, np.eye(self.m, dtype=int))
         y = np.kron(np.eye(self.l, dtype=int), S_m)
@@ -133,8 +134,8 @@ class BbCode(QldpcCode):
         get_Z_detectors = True if basis == 'Z' or circuit_build_options.get_all_detectors else False
         get_X_detectors = True if basis == 'X' or circuit_build_options.get_all_detectors else False
 
-        S_l = self.get_circulant_mat(self.l, -1)
-        S_m = self.get_circulant_mat(self.m, -1)
+        S_l = get_circulant_mat(self.l, -1)
+        S_m = get_circulant_mat(self.m, -1)
         x = np.kron(S_l, np.eye(self.m, dtype=int))
         y = np.kron(np.eye(self.l, dtype=int), S_m)
 

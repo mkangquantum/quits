@@ -17,7 +17,7 @@ from typing import Iterable, Tuple
 
 import stim
 
-from quits.circuit import get_qldpc_mem_circuit
+from quits import CircuitBuildOptions, ErrorModel
 from quits.decoder import detector_error_model_to_matrix
 from quits.qldpc_code import BpcCode
 
@@ -35,15 +35,20 @@ class SearchConfig:
 
 
 def _build_bpc_code(cfg: SearchConfig) -> BpcCode:
-    code = BpcCode(list(cfg.p1), list(cfg.p2), cfg.lift_size, cfg.factor)
-    code.build_circuit(seed=cfg.seed)
-    return code
+    return BpcCode(list(cfg.p1), list(cfg.p2), cfg.lift_size, cfg.factor)
 
 
-def _build_circuit(code: BpcCode, num_rounds: int, basis: str) -> stim.Circuit:
+def _build_circuit(code: BpcCode, num_rounds: int, basis: str, seed: int) -> stim.Circuit:
     # Physical error rate does not affect circuit-distance search.
     p = 2e-3
-    return stim.Circuit(get_qldpc_mem_circuit(code, p, p, p, p, num_rounds, basis=basis))
+    return code.build_circuit(
+        strategy="cardinal",
+        error_model=ErrorModel(p, p, p, p),
+        num_rounds=num_rounds,
+        basis=basis,
+        circuit_build_options=CircuitBuildOptions(),
+        seed=seed,
+    )
 
 
 def run_distance_search(
@@ -54,7 +59,7 @@ def run_distance_search(
     dont_explore_edges_increasing_symptom_degree: bool = False,
 ) -> int:
     code = _build_bpc_code(cfg)
-    circuit = _build_circuit(code, cfg.num_rounds, cfg.basis)
+    circuit = _build_circuit(code, cfg.num_rounds, cfg.basis, cfg.seed)
 
     model = circuit.detector_error_model(decompose_errors=False)
     detector_error_model_to_matrix(model)

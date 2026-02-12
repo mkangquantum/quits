@@ -9,6 +9,7 @@ from .circuit_construction import get_builder
 from .circuit_construction.circuit_build_options import CircuitBuildOptions
 from ..gf2_util import _gf2_inv_square, compute_lz_and_lx
 from .base import QldpcCode
+from .qldpc_util import get_circulant_mat, lift
 
 
 class BpcCode(QldpcCode):
@@ -48,12 +49,12 @@ class BpcCode(QldpcCode):
         self.b1, self.b1T = b1, b1T
         self.b1_placeholder, self.b1T_placeholder = b1_placeholder, b1T_placeholder
 
-        h1 = self.lift(self.lift_size, b1, b1_placeholder)
-        h1T = self.lift(self.lift_size, b1T, b1T_placeholder)
+        h1 = lift(self.lift_size, b1, b1_placeholder)
+        h1T = lift(self.lift_size, b1T, b1T_placeholder)
 
         h2 = np.zeros((self.lift_size, self.lift_size), dtype=int)
         for power in p2:
-            h2 = h2 + self.get_circulant_mat(self.lift_size, power)
+            h2 = h2 + get_circulant_mat(self.lift_size, power)
         h2 = np.kron(np.eye(self.factor, dtype=int), h2)
         h2T = h2.T
 
@@ -99,8 +100,8 @@ class BpcCode(QldpcCode):
         cnt = 0
         for i in range(self.factor - 1):
             for j in range(self.factor - 1):
-                yi_vec = self.get_circulant_mat(self.factor, 0)[:, i]
-                xjgx_vec = (self.get_circulant_mat(self.factor, 0) + self.get_circulant_mat(self.factor, 1))[:, j]
+                yi_vec = get_circulant_mat(self.factor, 0)[:, i]
+                xjgx_vec = (get_circulant_mat(self.factor, 0) + get_circulant_mat(self.factor, 1))[:, j]
                 xjgx_vec = np.tile(xjgx_vec, self.lift_size // self.factor)
 
                 prod = np.kron(yi_vec, xjgx_vec)
@@ -111,8 +112,8 @@ class BpcCode(QldpcCode):
 
         for i in range(self.factor - 1):
             for j in range(self.factor - 1):
-                yigy_vec = (self.get_circulant_mat(self.factor, 0) + self.get_circulant_mat(self.factor, 1))[:, i]
-                xj_vec = self.get_circulant_mat(self.factor, 0)[:, j]
+                yigy_vec = (get_circulant_mat(self.factor, 0) + get_circulant_mat(self.factor, 1))[:, i]
+                xj_vec = get_circulant_mat(self.factor, 0)[:, j]
                 xj_vec = np.tile(xj_vec, self.lift_size // self.factor)
 
                 prod = np.kron(yigy_vec, xj_vec)

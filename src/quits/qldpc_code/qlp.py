@@ -9,6 +9,7 @@ from .circuit_construction import get_builder
 from .circuit_construction.circuit_build_options import CircuitBuildOptions
 from ..gf2_util import compute_lz_and_lx
 from .base import QldpcCode
+from .qldpc_util import lift, lift_enc
 
 
 class QlpCode(QldpcCode):
@@ -43,8 +44,8 @@ class QlpCode(QldpcCode):
         hx_base_placeholder = np.concatenate((np.kron(np.eye(self.n2, dtype=int), b1_placeholder),
                                               np.kron(b2_placeholder.T, np.eye(self.m1, dtype=int))), axis=1)
 
-        self.hz = self.lift(self.lift_size, hz_base, hz_base_placeholder)
-        self.hx = self.lift(self.lift_size, hx_base, hx_base_placeholder)
+        self.hz = lift(self.lift_size, hz_base, hz_base_placeholder)
+        self.hx = lift(self.lift_size, hx_base, hx_base_placeholder)
         self.lz, self.lx = compute_lz_and_lx(self.hz, self.hx)
 
     def build_circuit(
@@ -265,8 +266,8 @@ class QlpPolyCode(QldpcCode):
         hx_base_placeholder = np.concatenate((np.kron(np.eye(self.n2, dtype=int), self.b1_placeholder),
                                               np.kron(self.b2_placeholder.T, np.eye(self.m1, dtype=int))), axis=1)
 
-        self.hz = self.lift_enc(self.lift_size, hz_base_enc, hz_base_placeholder)
-        self.hx = self.lift_enc(self.lift_size, hx_base_enc, hx_base_placeholder)
+        self.hz = lift_enc(self.lift_size, hz_base_enc, hz_base_placeholder)
+        self.hx = lift_enc(self.lift_size, hx_base_enc, hx_base_placeholder)
         self.lz, self.lx = compute_lz_and_lx(self.hz, self.hx)
 
     def build_circuit(

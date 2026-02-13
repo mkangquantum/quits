@@ -1,39 +1,56 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "quits"
-version = "0.5.0"
+version = "1.0.0"
 authors = [
-  { name="Mingyu Kang", email="mingyu.kang@duke.edu" },
-  { name="Yingjia Lin", email="yingjia.lin@duke.edu" },
-  { name="Hanwen Yao", email="hanwen.yao@duke.edu" },
-  { name="Mert Gökduman", email="mert.gokduman@duke.edu" }, 
+  { name = "Mingyu Kang", email = "mingyu.kang@duke.edu" },
+  { name = "Yingjia Lin", email = "yingjia.lin@duke.edu" },
+  { name = "Hanwen Yao", email = "hanwen.yao@duke.edu" },
+  { name = "Mert Gökduman", email = "mert.gokduman@duke.edu" },
 ]
-description = "A modular Qldpc code circUIT Simulator"
-readme = "README.md"
+description = "A modular QLDPC code circuit simulator"
+readme = { file = "README.md", content-type = "text/markdown" }
 license = { file = "LICENSE" }
 requires-python = ">=3.9.7"
 classifiers = [
-    "Programming Language :: Python :: 3",
-    "Operating System :: OS Independent",
+  "Development Status :: 5 - Production/Stable",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Operating System :: OS Independent",
 ]
 
 dependencies = [
-    "numpy>=1.24.0",
-    "scipy>=1.9.3",
-    "matplotlib",
-    "stim>=1.13.0",
-    "networkx>=2.8.8",
-    "ldpc>=2.1.2"
+  "numpy>=1.24.0",
+  "scipy>=1.9.3",
+  "matplotlib",
+  "stim>=1.13.0",
+  "networkx>=2.8.8",
+  "ldpc>=2.1.2",
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/mkangquantum/quits.git"
+Homepage = "https://github.com/mkangquantum/quits"
+Source = "https://github.com/mkangquantum/quits"
+Issues = "https://github.com/mkangquantum/quits/issues"
+Changelog = "https://github.com/mkangquantum/quits/blob/v1.0.0/CHANGELOG.md"
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "build",
+  "twine",
+]
 
 [tool.setuptools]
-package-dir = {"" = "src"}
+package-dir = { "" = "src" }
 
 [tool.setuptools.packages.find]
 where = ["src"]

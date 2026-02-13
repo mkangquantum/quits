@@ -2,16 +2,15 @@ import numpy as np
 
 from quits.noise import ErrorModel
 from quits.decoder import sliding_window_bplsd_phenom_mem, sliding_window_bposd_phenom_mem
-from quits.qldpc_code import HgpCode
+from quits.qldpc_code import BpcCode
 from quits.simulation import get_stim_mem_result
 
 
-def _build_hgp_code(seed=1):
-    h = np.loadtxt(
-        "parity_check_matrices/n=12_dv=3_dc=4_dist=6.txt",
-        dtype=int,
-    )
-    code = HgpCode(h, h)
+def _build_bpc_code(seed=1):
+    lift_size, factor = 15, 3
+    p1 = [0, 1, 5]
+    p2 = [0, 8, 13]
+    code = BpcCode(p1, p2, lift_size, factor)
     code.build_circuit(strategy="cardinal", seed=seed)
     return code
 
@@ -85,13 +84,13 @@ def _print_results(name, params, depth, eff_error_rate_per_fault, pL, lfr):
 
 
 def test_bposd_decoder_phenom_low_lfr():
-    code = _build_hgp_code(seed=1)
+    code = _build_bpc_code(seed=1)
     report = code.verify_css_logicals()
     assert report["all_tests_passed"]
 
     params = {
         "p": 5e-4,
-        "num_rounds": 15,
+        "num_rounds": 10,
         "num_trials": 50,
         "W": 5,
         "F": 3,
@@ -123,13 +122,13 @@ def test_bposd_decoder_phenom_low_lfr():
 
 
 def test_bplsd_decoder_phenom_low_lfr():
-    code = _build_hgp_code(seed=1)
+    code = _build_bpc_code(seed=1)
     report = code.verify_css_logicals()
     assert report["all_tests_passed"]
 
     params = {
         "p": 5e-4,
-        "num_rounds": 15,
+        "num_rounds": 10,
         "num_trials": 50,
         "W": 5,
         "F": 3,

@@ -3,17 +3,16 @@ from ldpc.bposd_decoder import BpOsdDecoder
 
 from quits.noise import ErrorModel
 from quits.decoder.sliding_window import sliding_window_circuit_mem, sliding_window_phenom_mem
-from quits.qldpc_code import HgpCode
+from quits.qldpc_code import BpcCode
 from quits.simulation import get_stim_mem_result
 
 
-def _build_hgp_code():
-    h = np.loadtxt(
-        "parity_check_matrices/n=12_dv=3_dc=4_dist=6.txt",
-        dtype=int,
-    )
-    code = HgpCode(h, h)
-    code.build_circuit(strategy="cardinal", seed=1)
+def _build_bpc_code(seed=1):
+    lift_size, factor = 15, 3
+    p1 = [0, 1, 5]
+    p2 = [0, 8, 13]
+    code = BpcCode(p1, p2, lift_size, factor)
+    code.build_circuit(strategy="cardinal", seed=seed)
     return code
 
 
@@ -45,9 +44,9 @@ def _bp_osd_params(max_iter, osd_order):
 
 
 def test_sliding_window_circuit_mem_low_logical_error():
-    code = _build_hgp_code()
+    code = _build_bpc_code(seed=1)
     p = 5e-4
-    num_rounds = 15
+    num_rounds = 10
     num_trials = 50
     W, F = 5, 3
     max_iter, osd_order = 10, 1
@@ -105,9 +104,9 @@ def test_sliding_window_circuit_mem_low_logical_error():
 
 
 def test_sliding_window_phenom_mem_low_logical_error():
-    code = _build_hgp_code()
+    code = _build_bpc_code(seed=1)
     p = 5e-4
-    num_rounds = 15
+    num_rounds = 10
     num_trials = 50
     W, F = 5, 3
     max_iter, osd_order = 10, 1

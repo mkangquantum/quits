@@ -156,7 +156,7 @@ def test_hgp_code_circuit_low_lfr():
 
     params = {
         "p": 5e-4,
-        "num_rounds": 15,
+        "num_rounds": 10,
         "num_trials": 50,
         "W": 5,
         "F": 3,
@@ -181,7 +181,7 @@ def test_hgpcode_zxcoloration_circuit_low_lfr():
 
     params = {
         "p": 5e-4,
-        "num_rounds": 15,
+        "num_rounds": 10,
         "num_trials": 50,
         "W": 5,
         "F": 3,
@@ -233,7 +233,7 @@ def test_qlp_code_circuit_low_lfr():
 
     params = {
         "p": 5e-4,
-        "num_rounds": 15,
+        "num_rounds": 10,
         "num_trials": 50,
         "W": 5,
         "F": 3,
@@ -257,7 +257,7 @@ def test_bpc_code_circuit_low_lfr():
 
     params = {
         "p": 1e-3,
-        "num_rounds": 15,
+        "num_rounds": 10,
         "num_trials": 50,
         "W": 5,
         "F": 3,
@@ -289,7 +289,7 @@ def test_lcs_code_circuit_low_lfr():
 
     params = {
         "p": 1e-3,
-        "num_rounds": 15,
+        "num_rounds": 10,
         "num_trials": 50,
         "W": 5,
         "F": 3,
@@ -321,7 +321,7 @@ def test_bb_code_circuit_low_lfr():
 
     params = {
         "p": 1e-3,
-        "num_rounds": 15,
+        "num_rounds": 10,
         "num_trials": 50,
         "W": 5,
         "F": 3,

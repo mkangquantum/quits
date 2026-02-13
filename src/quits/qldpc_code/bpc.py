@@ -4,13 +4,18 @@
 
 import numpy as np
 
+from ..noise import ErrorModel
 from .circuit_construction import get_builder
+from .circuit_construction.circuit_build_options import CircuitBuildOptions
 from ..gf2_util import _gf2_inv_square, compute_lz_and_lx
 from .base import QldpcCode
+from .qldpc_util import get_circulant_mat, lift
 
 
 class BpcCode(QldpcCode):
-    def __init__(self, p1, p2, lift_size, factor, canonical_basis="Z", verbose=False):
+    supported_strategies = {"cardinal", "zxcoloration"}
+
+    def __init__(self, p1, p2, lift_size, factor, canonical_basis="Z"):
         '''
         :param p1: First polynomial used to construct the bp code. Each entry of the list is the power of each polynomial term.
                    e.g. p1 = [0, 1, 5] represents the polynomial 1 + x + x^5
@@ -19,7 +24,6 @@ class BpcCode(QldpcCode):
         :param factor: Power of the monomial generator of the cyclic subgroup that is factored out by the balanced product.
                        e.g. if factor == 3, cyclic subgroup <x^3> is factored out.
         :param canonical_basis: Basis choice for canonical logicals; "Z" or "X".
-        :param verbose: If True, print construction details (e.g., when canonical logicals are used).
         :note: BPC code does not currently support q = 1 (i.e., lift_size == factor).
         '''
         # Reference: R. Tiew & N. P. Breuckmann, arXiv:2411.03302 (balanced product cyclic codes).
@@ -29,7 +33,6 @@ class BpcCode(QldpcCode):
         self.p1, self.p2 = p1, p2
         self.lift_size = lift_size
         self.factor = factor
-        self.verbose = verbose
         self.canonical_basis = canonical_basis.upper()
 
         b1 = np.zeros((self.factor, self.factor), dtype=int)
@@ -44,12 +47,12 @@ class BpcCode(QldpcCode):
         self.b1, self.b1T = b1, b1T
         self.b1_placeholder, self.b1T_placeholder = b1_placeholder, b1T_placeholder
 
-        h1 = self.lift(self.lift_size, b1, b1_placeholder)
-        h1T = self.lift(self.lift_size, b1T, b1T_placeholder)
+        h1 = lift(self.lift_size, b1, b1_placeholder)
+        h1T = lift(self.lift_size, b1T, b1T_placeholder)
 
         h2 = np.zeros((self.lift_size, self.lift_size), dtype=int)
         for power in p2:
-            h2 = h2 + self.get_circulant_mat(self.lift_size, power)
+            h2 = h2 + get_circulant_mat(self.lift_size, power)
         h2 = np.kron(np.eye(self.factor, dtype=int), h2)
         h2T = h2.T
 
@@ -63,8 +66,6 @@ class BpcCode(QldpcCode):
                 "BpcCode does not currently support q = 1 (lift_size == factor)."
             )
         if q % 2 == 1:
-            if self.verbose:
-                print("BpcCode: using canonical logical codewords (q is odd).")
             self.lz, self.lx = self.get_canonical_logicals(canonical_basis=self.canonical_basis)
         else:
             self.lz, self.lx = compute_lz_and_lx(self.hz, self.hx)
@@ -95,8 +96,8 @@ class BpcCode(QldpcCode):
         cnt = 0
         for i in range(self.factor - 1):
             for j in range(self.factor - 1):
-                yi_vec = self.get_circulant_mat(self.factor, 0)[:, i]
-                xjgx_vec = (self.get_circulant_mat(self.factor, 0) + self.get_circulant_mat(self.factor, 1))[:, j]
+                yi_vec = get_circulant_mat(self.factor, 0)[:, i]
+                xjgx_vec = (get_circulant_mat(self.factor, 0) + get_circulant_mat(self.factor, 1))[:, j]
                 xjgx_vec = np.tile(xjgx_vec, self.lift_size // self.factor)
 
                 prod = np.kron(yi_vec, xjgx_vec)
@@ -107,8 +108,8 @@ class BpcCode(QldpcCode):
 
         for i in range(self.factor - 1):
             for j in range(self.factor - 1):
-                yigy_vec = (self.get_circulant_mat(self.factor, 0) + self.get_circulant_mat(self.factor, 1))[:, i]
-                xj_vec = self.get_circulant_mat(self.factor, 0)[:, j]
+                yigy_vec = (get_circulant_mat(self.factor, 0) + get_circulant_mat(self.factor, 1))[:, i]
+                xj_vec = get_circulant_mat(self.factor, 0)[:, j]
                 xj_vec = np.tile(xj_vec, self.lift_size // self.factor)
 
                 prod = np.kron(yigy_vec, xj_vec)
@@ -131,13 +132,74 @@ class BpcCode(QldpcCode):
 
         return lz, lx
 
-    def build_circuit(self, strategy="cardinal", **opts):
-        if strategy != "cardinal":
-            return super().build_circuit(strategy=strategy, **opts)
-        return self._build_cardinal_graph(**opts)
+    def build_circuit(
+        self,
+        strategy="cardinal",
+        error_model=None,
+        num_rounds=0,
+        basis="Z",
+        circuit_build_options=None,
+        **opts,
+    ):
+        '''
+        Build a circuit for this balanced-product cyclic code using the selected strategy.
 
-    def _build_cardinal_graph(self, seed=1):
-        get_builder("cardinal").build_graph(self)
+        :param strategy: Circuit-construction strategy name (e.g., "cardinal").
+        :param error_model: ErrorModel specifying idle/single-/two-qubit/SPAM noise.
+        :param num_rounds: Number of noisy syndrome-extraction rounds after the zeroth round.
+        :param basis: Logical storage/measurement basis, either "Z" or "X".
+        :param circuit_build_options: CircuitBuildOptions controlling detector and noise toggles.
+        :param opts: Additional keyword arguments, e.g., seed for the cardinal strategy.
+        :return: Stim circuit.
+        '''
+        if error_model is None:
+            error_model = ErrorModel()
+        if circuit_build_options is None:
+            circuit_build_options = CircuitBuildOptions()
+        elif not isinstance(circuit_build_options, CircuitBuildOptions):
+            raise TypeError("circuit_build_options must be a CircuitBuildOptions instance.")
+        
+        if strategy == "cardinal":
+            seed = opts.get("seed", 1)
+            return self._build_cardinal_circuit(
+                error_model=error_model,
+                num_rounds=num_rounds,
+                basis=basis,
+                circuit_build_options=circuit_build_options,
+                seed=seed,
+            )
+        elif strategy == "zxcoloration":
+            builder = get_builder("zxcoloration", self)
+            return builder.get_coloration_circuit(
+                error_model=error_model,
+                num_rounds=num_rounds,
+                basis=basis,
+                circuit_build_options=circuit_build_options,
+            )
+        else:
+            return super().build_circuit(strategy=strategy, **opts)
+        
+    def _build_cardinal_circuit(
+        self,
+        error_model=None,
+        num_rounds=0,
+        basis="Z",
+        circuit_build_options=None,
+        seed=1,
+    ):
+        """
+        Build a cardinal circuit for this balanced-product cyclic code.
+
+        :param seed: Random seed used by graph-edge orientation/coloring helpers.
+        """
+        if error_model is None:
+            error_model = ErrorModel()
+        if circuit_build_options is None:
+            circuit_build_options = CircuitBuildOptions()
+        elif not isinstance(circuit_build_options, CircuitBuildOptions):
+            raise TypeError("circuit_build_options must be a CircuitBuildOptions instance.")
+        builder = get_builder("cardinal", self)
+        builder.build_graph()
         data_qubits, zcheck_qubits, xcheck_qubits = [], [], []
 
         # Add nodes to the Tanner graph
@@ -145,32 +207,32 @@ class BpcCode(QldpcCode):
             for l in range(self.lift_size):
                 node = i * self.lift_size + l
                 data_qubits += [node]
-                self.graph.add_node(node, pos=(2 * i, 0))
-                self.node_colors += ['blue']
+                # Bottom left: data qubits
+                self.graph.add_node(node, pos=(l, i))
 
         start = self.factor * self.lift_size
         for i in range(self.factor):
             for l in range(self.lift_size):
                 node = start + i * self.lift_size + l
                 xcheck_qubits += [node]
-                self.graph.add_node(node, pos=(2 * i + 1, 0))
-                self.node_colors += ['purple']
+                # Bottom right: X-check qubits
+                self.graph.add_node(node, pos=(self.lift_size + l, i))
 
         start = 2 * self.factor * self.lift_size
         for i in range(self.factor):
             for l in range(self.lift_size):
                 node = start + i * self.lift_size + l
                 zcheck_qubits += [node]
-                self.graph.add_node(node, pos=(2 * i, 1))
-                self.node_colors += ['green']
+                # Top left: Z-check qubits
+                self.graph.add_node(node, pos=(l, self.factor + i))
 
         start = 3 * self.factor * self.lift_size
         for i in range(self.factor):
             for l in range(self.lift_size):
                 node = start + i * self.lift_size + l
                 data_qubits += [node]
-                self.graph.add_node(node, pos=(2 * i + 1, 1))
-                self.node_colors += ['blue']
+                # Top right: data qubits
+                self.graph.add_node(node, pos=(self.lift_size + l, self.factor + i))
 
         self.data_qubits = sorted(np.array(data_qubits))
         self.zcheck_qubits = sorted(np.array(zcheck_qubits))
@@ -182,7 +244,6 @@ class BpcCode(QldpcCode):
         vedge_bool_list = self.get_classical_edge_bools(np.ones(self.b1.shape, dtype=int), seed)
 
         # Add edges to the Tanner graph of each direction
-        edge_no = 0
         for i in range(self.factor):
             for j in range(self.factor):
                 shift = self.b1[i, j]
@@ -191,14 +252,13 @@ class BpcCode(QldpcCode):
                 for l in range(self.lift_size):
                     for k in range(2):  # 0 : bottom, 1 : top
                         if k ^ edge_bool:
-                            direction_ind = self.direction_inds['E']
+                            direction = 'E'
                         else:
-                            direction_ind = self.direction_inds['W']
+                            direction = 'W'
 
                         control = (2 * k + 1) * self.factor * self.lift_size + i * self.lift_size + (l + shift) % self.lift_size
                         target = 2 * k * self.factor * self.lift_size + j * self.lift_size + l
-                        self.add_edge(edge_no, direction_ind, control, target)
-                        edge_no += 1
+                        self.add_edge(direction, control, target)
 
         def shuffle(node_no, qubit_no):
             m, r = qubit_no // self.factor, qubit_no % self.factor
@@ -214,18 +274,22 @@ class BpcCode(QldpcCode):
                         j_shuffled, _ = shuffle(i, (l + shift) % self.lift_size)
                         edge_bool = vedge_bool_list[(i_shuffled, j_shuffled)]
                         if k ^ edge_bool:
-                            direction_ind = self.direction_inds['N']
+                            direction = 'N'
                         else:
-                            direction_ind = self.direction_inds['S']
+                            direction = 'S'
 
                         control = k * self.factor * self.lift_size + i * self.lift_size + l
                         target = (2 + k) * self.factor * self.lift_size + i * self.lift_size + (l + shift) % self.lift_size
-                        self.add_edge(edge_no, direction_ind, control, target)
-                        edge_no += 1
+                        self.add_edge(direction, control, target)
 
         # Color the edges of self.graph
         self.color_edges()
-        return
+        return builder.get_cardinal_circuit(
+            error_model=error_model,
+            num_rounds=num_rounds,
+            basis=basis,
+            circuit_build_options=circuit_build_options,
+        )
 
 
 __all__ = ["BpcCode"]

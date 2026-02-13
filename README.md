@@ -1,5 +1,10 @@
 # QUITS: A Modular QLDPC Code circUIT Simulator
 
+[![CI](https://github.com/mkangquantum/quits/actions/workflows/ci.yml/badge.svg)](https://github.com/mkangquantum/quits/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/quits)](https://pypi.org/project/quits/)
+[![Python](https://img.shields.io/pypi/pyversions/quits)](https://pypi.org/project/quits/)
+[![License](https://img.shields.io/pypi/l/quits)](https://pypi.org/project/quits/)
+
 QUITS is a modular and flexible circuit-level simulator for quantum low-density parity-check (QLDPC) codes. It is designed so users can choose and mix different options for each module independently: code construction, circuit strategy, decoder, and noise model.
 
 *Example QLDPC code (Balanced Product Cyclic code) Tanner graph with cardinal circuit scheduling.*

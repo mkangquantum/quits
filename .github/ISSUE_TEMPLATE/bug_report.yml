@@ -1,0 +1,61 @@
+name: Bug report
+description: Report a reproducible problem in QUITS
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. A minimal reproducible example helps us fix issues quickly.
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: What happened?
+      description: Describe the bug and include any traceback/output.
+      placeholder: "I ran ... and got ..."
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproducible example
+      description: Paste code/commands that reproduce the issue.
+      render: python
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+      placeholder: "I expected ..."
+    validations:
+      required: true
+  - type: input
+    id: quits_version
+    attributes:
+      label: QUITS version
+      description: Output of `python -c "import quits; print(quits.__version__)"`
+      placeholder: "1.0.0"
+    validations:
+      required: false
+  - type: input
+    id: python_version
+    attributes:
+      label: Python version
+      placeholder: "3.12.2"
+    validations:
+      required: false
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      placeholder: "Ubuntu 22.04 / macOS 14 / Windows 11"
+    validations:
+      required: false
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional context
+      description: Links to papers, parameter choices, or environment details (Stim/ldpc versions) if relevant.
+    validations:
+      required: false
+

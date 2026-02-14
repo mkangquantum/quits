@@ -7,7 +7,7 @@ The project aims to follow Semantic Versioning (SemVer).
 ## 1.0.0 - Unreleased
 
 ### Added
-- GitHub Actions CI for `pytest` across Python 3.9–3.12.
+- GitHub Actions CI for `pytest` across Python 3.10–3.12.
 - PyPI publishing workflow using Trusted Publishing (OIDC).
 - `quits.__version__` for runtime version introspection.
 

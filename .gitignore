@@ -81,3 +81,9 @@ dmypy.json
 # ================================
 *.tmp
 *.temp
+
+# ================================
+# Local agent instructions (keep uncommitted)
+# ================================
+AGENTS.md
+**/AGENTS.md

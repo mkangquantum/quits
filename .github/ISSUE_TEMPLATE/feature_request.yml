@@ -1,0 +1,36 @@
+name: Feature request
+description: Suggest an enhancement to QUITS
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What workflow or limitation are you running into?
+      placeholder: "I want to ..."
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Describe the API/design you’d like (modules touched, expected inputs/outputs).
+      placeholder: "Add ..."
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      placeholder: "I also considered ..."
+    validations:
+      required: false
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: How should we know the feature is done (tests, docs, performance, etc.)?
+      placeholder: "- [ ] ..."
+    validations:
+      required: false
+

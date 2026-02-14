@@ -1,0 +1,6 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation / tutorials
+    url: https://github.com/mkangquantum/quits/tree/v1.0.0/doc
+    about: Check the notebooks for usage examples.
+

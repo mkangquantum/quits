@@ -29,6 +29,7 @@ class ZXColorationBuilder(CircuitBuilder):
         draw_edges=True,
         x_scale=3.0,
         y_scale=3.0,
+        center_checks=True,
         node_size=100,
         font_size=8,
         figsize=None,
@@ -46,6 +47,30 @@ class ZXColorationBuilder(CircuitBuilder):
             raise ValueError("part must be one of: all, z, x")
 
         pos = nx.get_node_attributes(code.graph, "pos")
+        if center_checks:
+            def _center_x(node_ids):
+                xs = [pos[int(q)][0] for q in node_ids if int(q) in pos]
+                if not xs:
+                    return None
+                return 0.5 * (min(xs) + max(xs))
+
+            data_center = _center_x(getattr(code, "data_qubits", ()))
+            if data_center is not None:
+                zcheck_nodes = getattr(code, "zcheck_qubits", ())
+                xcheck_nodes = getattr(code, "xcheck_qubits", ())
+                for check_nodes in (zcheck_nodes, xcheck_nodes):
+                    check_center = _center_x(check_nodes)
+                    if check_center is None:
+                        continue
+                    dx = data_center - check_center
+                    if abs(dx) < 1e-12:
+                        continue
+                    for q in check_nodes:
+                        q = int(q)
+                        if q not in pos:
+                            continue
+                        x, y = pos[q]
+                        pos[q] = (x + dx, y)
         if x_scale != 1.0 or y_scale != 1.0:
             pos = {k: (v[0] * x_scale, v[1] * y_scale) for k, v in pos.items()}
         nodes = list(graph.nodes())
@@ -141,18 +166,22 @@ class ZXColorationBuilder(CircuitBuilder):
         zcheck_qubits = np.arange(n_data, n_data + n_z, dtype=int)
         xcheck_qubits = np.arange(n_data + n_z, n_data + n_z + n_x, dtype=int)
 
+        data_center_x = 0.5 * (n_data - 1) if n_data > 0 else 0.0
+        zcheck_offset_x = data_center_x - (0.5 * (n_z - 1) if n_z > 0 else 0.0)
+        xcheck_offset_x = data_center_x - (0.5 * (n_x - 1) if n_x > 0 else 0.0)
+
         for i in range(n_data):
             code.graph.add_node(int(data_qubits[i]), pos=(i, 0))
             code.node_colors += ["blue"]
 
         for i in range(n_z):
             node = int(zcheck_qubits[i])
-            code.graph.add_node(node, pos=(i, -1))
+            code.graph.add_node(node, pos=(i + zcheck_offset_x, -1))
             code.node_colors += ["green"]
 
         for i in range(n_x):
             node = int(xcheck_qubits[i])
-            code.graph.add_node(node, pos=(i, 1))
+            code.graph.add_node(node, pos=(i + xcheck_offset_x, 1))
             code.node_colors += ["purple"]
 
         code.data_qubits = data_qubits

@@ -13,7 +13,7 @@ from .qldpc_util import lift, lift_enc
 
 
 class QlpCode(QldpcCode):
-    supported_strategies = {"cardinal", "zxcoloration"}
+    supported_strategies = {"cardinal", "cardinalNSmerge", "zxcoloration"}
 
     def __init__(self, b1, b2, lift_size):
         '''
@@ -74,7 +74,7 @@ class QlpCode(QldpcCode):
             circuit_build_options = CircuitBuildOptions()
         elif not isinstance(circuit_build_options, CircuitBuildOptions):
             raise TypeError("circuit_build_options must be a CircuitBuildOptions instance.")
-        if strategy == "cardinal":
+        if strategy in ("cardinal", "cardinalNSmerge"):
             seed = opts.get("seed", 1)
             return self._build_cardinal_circuit(
                 error_model=error_model,
@@ -82,6 +82,7 @@ class QlpCode(QldpcCode):
                 basis=basis,
                 circuit_build_options=circuit_build_options,
                 seed=seed,
+                builder_name=strategy,
             )
         elif strategy == "zxcoloration":
             builder = get_builder("zxcoloration", self)
@@ -101,6 +102,7 @@ class QlpCode(QldpcCode):
         basis="Z",
         circuit_build_options=None,
         seed=1,
+        builder_name="cardinal",
     ):
         """
         Build a cardinal circuit for this lifted-product code.
@@ -113,7 +115,7 @@ class QlpCode(QldpcCode):
             circuit_build_options = CircuitBuildOptions()
         elif not isinstance(circuit_build_options, CircuitBuildOptions):
             raise TypeError("circuit_build_options must be a CircuitBuildOptions instance.")
-        builder = get_builder("cardinal", self)
+        builder = get_builder(builder_name, self)
         builder.build_graph()
         data_qubits, zcheck_qubits, xcheck_qubits = [], [], []
 
@@ -172,7 +174,7 @@ class QlpCode(QldpcCode):
 
                         control = (k * (self.n1 + self.m1) + self.n1 + i) * self.lift_size + (l + shift) % self.lift_size
                         target = (k * (self.n1 + self.m1) + j) * self.lift_size + l
-                        self.add_edge(direction, control, target)
+                        builder.add_edge(direction, control, target)
 
         for i in range(self.m2):
             for j in range(self.n2):
@@ -188,10 +190,10 @@ class QlpCode(QldpcCode):
 
                         control = (k + j * (self.n1 + self.m1)) * self.lift_size + l
                         target = (k + (i + self.n2) * (self.n1 + self.m1)) * self.lift_size + (l + shift) % self.lift_size
-                        self.add_edge(direction, control, target)
+                        builder.add_edge(direction, control, target)
 
         # Color the edges of self.graph
-        self.color_edges()
+        builder.color_edges()
         return builder.get_cardinal_circuit(
             error_model=error_model,
             num_rounds=num_rounds,
@@ -201,7 +203,7 @@ class QlpCode(QldpcCode):
 
 
 class QlpPolyCode(QldpcCode):
-    supported_strategies = {"cardinal", "zxcoloration"}
+    supported_strategies = {"cardinal", "cardinalNSmerge", "zxcoloration"}
 
     def __init__(self, b1, b2, lift_size):
         '''
@@ -293,7 +295,7 @@ class QlpPolyCode(QldpcCode):
         elif not isinstance(circuit_build_options, CircuitBuildOptions):
             raise TypeError("circuit_build_options must be a CircuitBuildOptions instance.")
         
-        if strategy == "cardinal":
+        if strategy in ("cardinal", "cardinalNSmerge"):
             seed = opts.get("seed", 1)
             return self._build_cardinal_circuit(
                 error_model=error_model,
@@ -301,6 +303,7 @@ class QlpPolyCode(QldpcCode):
                 basis=basis,
                 circuit_build_options=circuit_build_options,
                 seed=seed,
+                builder_name=strategy,
             )
         elif strategy == "zxcoloration":
             builder = get_builder("zxcoloration", self)
@@ -320,6 +323,7 @@ class QlpPolyCode(QldpcCode):
         basis="Z",
         circuit_build_options=None,
         seed=1,
+        builder_name="cardinal",
     ):
         """
         Build a cardinal circuit for this polynomial lifted-product code.
@@ -332,7 +336,7 @@ class QlpPolyCode(QldpcCode):
             circuit_build_options = CircuitBuildOptions()
         elif not isinstance(circuit_build_options, CircuitBuildOptions):
             raise TypeError("circuit_build_options must be a CircuitBuildOptions instance.")
-        builder = get_builder("cardinal", self)
+        builder = get_builder(builder_name, self)
         builder.build_graph()
         data_qubits, zcheck_qubits, xcheck_qubits = [], [], []
 
@@ -393,7 +397,7 @@ class QlpPolyCode(QldpcCode):
                         for shift in self.b1[i][j]:
                             control = (k * (self.n1 + self.m1) + self.n1 + i) * self.lift_size + (l + shift) % self.lift_size
                             target = (k * (self.n1 + self.m1) + j) * self.lift_size + l
-                            self.add_edge(direction, control, target)
+                            builder.add_edge(direction, control, target)
 
         for i in range(self.m2):
             for j in range(self.n2):
@@ -411,10 +415,10 @@ class QlpPolyCode(QldpcCode):
                         for shift in self.b2[i][j]:
                             control = (k + j * (self.n1 + self.m1)) * self.lift_size + l
                             target = (k + (i + self.n2) * (self.n1 + self.m1)) * self.lift_size + (l + shift) % self.lift_size
-                            self.add_edge(direction, control, target)
+                            builder.add_edge(direction, control, target)
 
         # Color the edges of self.graph
-        self.color_edges()
+        builder.color_edges()
         return builder.get_cardinal_circuit(
             error_model=error_model,
             num_rounds=num_rounds,

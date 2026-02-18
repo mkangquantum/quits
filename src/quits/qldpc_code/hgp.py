@@ -12,7 +12,7 @@ from .base import QldpcCode
 
 
 class HgpCode(QldpcCode):
-    supported_strategies = {"cardinal", "zxcoloration"}
+    supported_strategies = {"cardinal", "cardinalNSmerge", "zxcoloration"}
 
     def __init__(self, h1, h2):
         '''
@@ -111,7 +111,7 @@ class HgpCode(QldpcCode):
         elif not isinstance(circuit_build_options, CircuitBuildOptions):
             raise TypeError("circuit_build_options must be a CircuitBuildOptions instance.")
         
-        if strategy == "cardinal":
+        if strategy in ("cardinal", "cardinalNSmerge"):
             seed = opts.get("seed", 1)
             return self._build_cardinal_circuit(
                 error_model=error_model,
@@ -119,6 +119,7 @@ class HgpCode(QldpcCode):
                 basis=basis,
                 circuit_build_options=circuit_build_options,
                 seed=seed,
+                builder_name=strategy,
             )
         elif strategy == "zxcoloration":
             builder = get_builder("zxcoloration", self)
@@ -138,6 +139,7 @@ class HgpCode(QldpcCode):
         basis="Z",
         circuit_build_options=None,
         seed=1,
+        builder_name="cardinal",
     ):
         """
         Build a cardinal circuit for this HGP code.
@@ -150,7 +152,7 @@ class HgpCode(QldpcCode):
             circuit_build_options = CircuitBuildOptions()
         elif not isinstance(circuit_build_options, CircuitBuildOptions):
             raise TypeError("circuit_build_options must be a CircuitBuildOptions instance.")
-        builder = get_builder("cardinal", self)
+        builder = get_builder(builder_name, self)
         builder.build_graph()
         data_qubits, zcheck_qubits, xcheck_qubits = [], [], []
 
@@ -200,7 +202,7 @@ class HgpCode(QldpcCode):
                     direction = 'E'
                 else:
                     direction = 'W'
-                self.add_edge(direction, control, target)
+                builder.add_edge(direction, control, target)
 
         for classical_edge in np.argwhere(self.h2 == 1):
             c0, c1 = classical_edge
@@ -211,10 +213,10 @@ class HgpCode(QldpcCode):
                     direction = 'N'
                 else:
                     direction = 'S'
-                self.add_edge(direction, control, target)
+                builder.add_edge(direction, control, target)
 
         # Color the edges of self.graph
-        self.color_edges()
+        builder.color_edges()
         return builder.get_cardinal_circuit(
             error_model=error_model,
             num_rounds=num_rounds,

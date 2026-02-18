@@ -6,7 +6,7 @@ from quits.noise import ErrorModel
 from quits.qldpc_code import BbCode, HgpCode, LcsCode, QlpCode
 
 
-@pytest.mark.parametrize("strategy", ["cardinal", "cardinalnsmerge"])
+@pytest.mark.parametrize("strategy", ["cardinal", "cardinalNSmerge"])
 def test_check_overlapping_cx_hgp_prints_when_verbose(strategy):
     h = np.loadtxt(
         "parity_check_matrices/n=12_dv=3_dc=4_dist=6.txt",

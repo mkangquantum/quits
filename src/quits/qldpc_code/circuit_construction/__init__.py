@@ -1,5 +1,5 @@
 from .cardinal import CardinalBuilder
-from .cardinalnsmerge import CardinalNSMergeBuilder
+from .cardinalNSmerge import CardinalNSMergeBuilder
 from .circuit_build_options import CircuitBuildOptions
 from .edge_coloration import edge_coloration
 from .custom import CustomBuilder

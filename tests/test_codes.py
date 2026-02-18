@@ -7,10 +7,18 @@ from quits.qldpc_code import BbCode, BpcCode, HgpCode, LcsCode, QlpCode
 from quits.simulation import get_stim_mem_result
 
 
-def _simulate_mem_cardinal_circuit(code, p, num_rounds, num_trials, basis="Z", seed=1):
+def _simulate_mem_cardinal_style_circuit(
+    code,
+    p,
+    num_rounds,
+    num_trials,
+    basis="Z",
+    seed=1,
+    strategy="cardinal",
+):
     em = ErrorModel(p, p, p, p)
     circuit = code.build_circuit(
-        strategy="cardinal",
+        strategy=strategy,
         error_model=em,
         num_rounds=num_rounds,
         basis=basis,
@@ -79,8 +87,8 @@ def _run_sliding_window_phenom(
     seed=1,
     strategy="cardinal",
 ):
-    if strategy == "cardinal":
-        code.build_circuit(strategy="cardinal", seed=seed)
+    if strategy in ("cardinal", "cardinalNSmerge"):
+        code.build_circuit(strategy=strategy, seed=seed)
     elif strategy == "zxcoloration":
         code.build_circuit(strategy="zxcoloration")
     else:
@@ -93,13 +101,14 @@ def _run_sliding_window_phenom(
     depth = code.depth
     eff_error_rate_per_fault = p * (depth + 3)
 
-    if strategy == "cardinal":
-        _, detection_events, observable_flips = _simulate_mem_cardinal_circuit(
+    if strategy in ("cardinal", "cardinalNSmerge"):
+        _, detection_events, observable_flips = _simulate_mem_cardinal_style_circuit(
             code,
             p,
             num_rounds,
             num_trials,
             seed=seed,
+            strategy=strategy,
         )
     else:
         _, detection_events, observable_flips = _simulate_mem_zxcoloration_circuit(
@@ -267,6 +276,35 @@ def test_bpc_code_circuit_low_lfr():
 
     depth, eff_error_rate_per_fault, pL, lfr = _run_sliding_window_phenom(code, "BPC", **params)
     _print_results("BPC", params, depth, eff_error_rate_per_fault, pL, lfr)
+    print()
+
+    assert pL <= 0.3
+    assert lfr <= 0.1
+
+
+def test_bpc_code_circuit_low_lfr_cardinalNSmerge():
+    lift_size, factor = 15, 3
+    p1 = [0, 1, 5]
+    p2 = [0, 8, 13]
+    code = BpcCode(p1, p2, lift_size, factor)
+
+    params = {
+        "p": 1e-3,
+        "num_rounds": 10,
+        "num_trials": 50,
+        "W": 5,
+        "F": 3,
+        "max_iter": 10,
+        "osd_order": 1,
+    }
+
+    depth, eff_error_rate_per_fault, pL, lfr = _run_sliding_window_phenom(
+        code,
+        "BPC-NS",
+        **params,
+        strategy="cardinalNSmerge",
+    )
+    _print_results("BPC-NS", params, depth, eff_error_rate_per_fault, pL, lfr)
     print()
 
     assert pL <= 0.3

@@ -3,7 +3,7 @@ import numpy as np
 from quits.qldpc_code import HgpCode
 
 
-def test_cardinalnsmerge_builds_ns_group_and_depth():
+def test_cardinalNSmerge_builds_ns_group_and_depth():
     h = np.loadtxt(
         "parity_check_matrices/n=12_dv=3_dc=4_dist=6.txt",
         dtype=int,
@@ -11,7 +11,7 @@ def test_cardinalnsmerge_builds_ns_group_and_depth():
     code = HgpCode(h, h)
 
     code.build_circuit(
-        strategy="cardinalnsmerge",
+        strategy="cardinalNSmerge",
         num_rounds=0,
         basis="Z",
         seed=1,

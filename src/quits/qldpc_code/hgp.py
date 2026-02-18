@@ -12,7 +12,7 @@ from .base import QldpcCode
 
 
 class HgpCode(QldpcCode):
-    supported_strategies = {"cardinal", "cardinalnsmerge", "zxcoloration"}
+    supported_strategies = {"cardinal", "cardinalNSmerge", "zxcoloration"}
 
     def __init__(self, h1, h2):
         '''
@@ -111,7 +111,7 @@ class HgpCode(QldpcCode):
         elif not isinstance(circuit_build_options, CircuitBuildOptions):
             raise TypeError("circuit_build_options must be a CircuitBuildOptions instance.")
         
-        if strategy in ("cardinal", "cardinalnsmerge"):
+        if strategy in ("cardinal", "cardinalNSmerge"):
             seed = opts.get("seed", 1)
             return self._build_cardinal_circuit(
                 error_model=error_model,

@@ -12,7 +12,7 @@ from .base import CircuitBuilder
 
 
 class CardinalNSMergeBuilder(CircuitBuilder):
-    name = "cardinalnsmerge"
+    name = "cardinalNSmerge"
 
     def __init__(self, code=None):
         self.code = code
@@ -36,7 +36,7 @@ class CardinalNSMergeBuilder(CircuitBuilder):
         code = self.code
         part = part.lower()
         if part not in ("node", "color", "direction"):
-            raise ValueError("For cardinalnsmerge draw_graph, part must be one of: node, color, direction.")
+            raise ValueError("For cardinalNSmerge draw_graph, part must be one of: node, color, direction.")
         if code is None or not hasattr(code, "graph"):
             raise ValueError("CardinalNSMergeBuilder.draw_graph requires an initialized code graph.")
 

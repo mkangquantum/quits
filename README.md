@@ -36,7 +36,7 @@ For background on QUITS, see [arXiv:2504.02673](https://arxiv.org/abs/2504.02673
 
 ## Circuit Construction Strategies
 
-| Code family | `zxcoloration` | `cardinal` | `custom` |
+| Code family | `zxcoloration` | `cardinal`<br>`cardinalnsmerge` | `custom` |
 | --- | --- | --- | --- |
 | HGP | yes | yes | no |
 | QLP | yes | yes | no |
@@ -46,7 +46,7 @@ For background on QUITS, see [arXiv:2504.02673](https://arxiv.org/abs/2504.02673
 | Any | yes | no | no |
 
 - [`zxcoloration`](https://github.com/mkangquantum/quits/blob/v1.0.0/doc/02C_zxcoloration_circuit_generation.ipynb) is available for all QLDPC codes.
-- [`cardinal`](https://github.com/mkangquantum/quits/blob/v1.0.0/doc/02B_cardinal_circuit_generation.ipynb) is available for HGP, QLP, BPC, and LCS.
+- [`cardinal`, `cardinalnsmerge`](https://github.com/mkangquantum/quits/blob/v1.0.0/doc/02B_cardinal_circuit_generation.ipynb) are available for HGP, QLP, BPC, and LCS.
 - [`custom`](https://github.com/mkangquantum/quits/blob/v1.0.0/doc/02A_custom_circuit_generation.ipynb) is available for BB code.
 
 

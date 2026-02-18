@@ -13,7 +13,7 @@ from .qldpc_util import get_circulant_mat, lift
 
 
 class BpcCode(QldpcCode):
-    supported_strategies = {"cardinal", "zxcoloration"}
+    supported_strategies = {"cardinal", "cardinalnsmerge", "zxcoloration"}
 
     def __init__(self, p1, p2, lift_size, factor, canonical_basis="Z"):
         '''
@@ -159,7 +159,7 @@ class BpcCode(QldpcCode):
         elif not isinstance(circuit_build_options, CircuitBuildOptions):
             raise TypeError("circuit_build_options must be a CircuitBuildOptions instance.")
         
-        if strategy == "cardinal":
+        if strategy in ("cardinal", "cardinalnsmerge"):
             seed = opts.get("seed", 1)
             return self._build_cardinal_circuit(
                 error_model=error_model,
@@ -167,6 +167,7 @@ class BpcCode(QldpcCode):
                 basis=basis,
                 circuit_build_options=circuit_build_options,
                 seed=seed,
+                builder_name=strategy,
             )
         elif strategy == "zxcoloration":
             builder = get_builder("zxcoloration", self)
@@ -186,6 +187,7 @@ class BpcCode(QldpcCode):
         basis="Z",
         circuit_build_options=None,
         seed=1,
+        builder_name="cardinal",
     ):
         """
         Build a cardinal circuit for this balanced-product cyclic code.
@@ -198,7 +200,7 @@ class BpcCode(QldpcCode):
             circuit_build_options = CircuitBuildOptions()
         elif not isinstance(circuit_build_options, CircuitBuildOptions):
             raise TypeError("circuit_build_options must be a CircuitBuildOptions instance.")
-        builder = get_builder("cardinal", self)
+        builder = get_builder(builder_name, self)
         builder.build_graph()
         data_qubits, zcheck_qubits, xcheck_qubits = [], [], []
 
@@ -258,7 +260,7 @@ class BpcCode(QldpcCode):
 
                         control = (2 * k + 1) * self.factor * self.lift_size + i * self.lift_size + (l + shift) % self.lift_size
                         target = 2 * k * self.factor * self.lift_size + j * self.lift_size + l
-                        self.add_edge(direction, control, target)
+                        builder.add_edge(direction, control, target)
 
         def shuffle(node_no, qubit_no):
             m, r = qubit_no // self.factor, qubit_no % self.factor
@@ -280,10 +282,10 @@ class BpcCode(QldpcCode):
 
                         control = k * self.factor * self.lift_size + i * self.lift_size + l
                         target = (2 + k) * self.factor * self.lift_size + i * self.lift_size + (l + shift) % self.lift_size
-                        self.add_edge(direction, control, target)
+                        builder.add_edge(direction, control, target)
 
         # Color the edges of self.graph
-        self.color_edges()
+        builder.color_edges()
         return builder.get_cardinal_circuit(
             error_model=error_model,
             num_rounds=num_rounds,

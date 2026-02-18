@@ -103,7 +103,7 @@ class QldpcCode:
                 basis=opts.get("basis", "Z"),
                 circuit_build_options=opts.get("circuit_build_options"),
             )
-        if strategy == "cardinal" or strategy == "custom" and strategy not in self.supported_strategies:
+        if strategy in ("cardinal", "cardinalnsmerge", "custom") and strategy not in self.supported_strategies:
             supported = ", ".join(sorted(self.supported_strategies))
             msg = (
                 f"Error: strategy='{strategy}' is not supported for {type(self).__name__}. "

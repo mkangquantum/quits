@@ -81,7 +81,7 @@ pip install -e .
 
 This project is based on [*QUITS: A modular Qldpc code circUIT Simulator*](https://doi.org/10.22331/q-2025-12-05-1931), originally developed by Mingyu Kang, Yingjia Lin, Hanwen Yao, Mert Gökduman, Arianna Meinking, and Kenneth R. Brown at the [Duke Quantum Center](https://quantum.duke.edu/), supported by NSF, ARO, and LPS.
 
-Since the release of QUITS, we acknowledge the feedback and suggestions from Ryan Tiew, Josias Old, and qodesign that helped improve the package. If you're working on QLDPC codes, decoders, or noise modeling, it'd be great if you could try QUITS, file issues, or contribute features. Let's build better tools for scalable, fault-tolerant quantum computing together.
+Since the release of QUITS, we acknowledge the feedback and suggestions from Ryan Tiew, Josias Old, qodesign, and Daniel Tan that helped improve the package. If you're working on QLDPC codes, decoders, or noise modeling, it'd be great if you could try QUITS, file issues, or contribute features. Let's build better tools for scalable, fault-tolerant quantum computing together.
 
 ## License
 

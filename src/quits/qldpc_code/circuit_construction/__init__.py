@@ -19,9 +19,7 @@ def get_builder(name, code=None):
     builder_cls = _BUILDERS.get(name)
     if builder_cls is None:
         raise ValueError(f"Unknown circuit construction strategy: {name}")
-    if name in (CardinalBuilder.name, CardinalNSMergeBuilder.name, ZXColorationBuilder.name):
-        return builder_cls(code=code)
-    return builder_cls()
+    return builder_cls(code=code)
 
 
 __all__ = [

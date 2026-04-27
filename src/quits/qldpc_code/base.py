@@ -3,6 +3,7 @@
 """
 
 import warnings
+from typing import TYPE_CHECKING
 
 import numpy as np
 from ..gf2_util import compute_lz_and_lx, verify_css_logicals
@@ -10,6 +11,9 @@ from .circuit_construction import get_builder
 from .qldpc_util import get_circulant_mat as _get_circulant_mat
 from .qldpc_util import lift as _lift
 from .qldpc_util import lift_enc as _lift_enc
+
+if TYPE_CHECKING:
+    from ..layout import Layout
 
 
 class QldpcCode:
@@ -48,6 +52,14 @@ class QldpcCode:
     def verify_css_logicals(self):
         return verify_css_logicals(self.hz, self.hx, self.lz, self.lx)
 
+    def get_layout(self, name: str | None = None) -> "Layout | None":
+        """Return the default layout for this code family, if one is available."""
+        return None
+
+    def set_draw_graph(self, draw_graph_fn) -> None:
+        """Install a strategy-specific graph drawing function on this code instance."""
+        self.draw_graph = draw_graph_fn
+
     def get_circulant_mat(self, size, power):
         warnings.warn(
             "QldpcCode.get_circulant_mat is deprecated; use quits.qldpc_code.qldpc_util.get_circulant_mat instead.",
@@ -75,20 +87,26 @@ class QldpcCode:
     # Draw the Tanner graph of the code.
     def draw_graph(
         self,
-        part="node",
+        layout=None,
+        part="all",
         draw_edges=True,
         x_scale=3.0,
         y_scale=3.0,
+        center_checks=True,
+        curved_edges=False,
         node_size=100,
         font_size=8,
         figsize=None,
     ):
         builder = get_builder("cardinal", self)
         return builder.draw_graph(
+            layout=layout,
             part=part,
             draw_edges=draw_edges,
             x_scale=x_scale,
             y_scale=y_scale,
+            center_checks=center_checks,
+            curved_edges=curved_edges,
             node_size=node_size,
             font_size=font_size,
             figsize=figsize,
@@ -103,7 +121,7 @@ class QldpcCode:
                 basis=opts.get("basis", "Z"),
                 circuit_build_options=opts.get("circuit_build_options"),
             )
-        if strategy in ("cardinal", "cardinalNSmerge", "custom") and strategy not in self.supported_strategies:
+        if strategy in {"cardinal", "cardinalNSmerge", "custom"} and strategy not in self.supported_strategies:
             supported = ", ".join(sorted(self.supported_strategies))
             msg = (
                 f"Error: strategy='{strategy}' is not supported for {type(self).__name__}. "

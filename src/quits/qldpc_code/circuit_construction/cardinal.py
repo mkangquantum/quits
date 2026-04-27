@@ -8,7 +8,7 @@ from ...circuit import Circuit
 from ...noise import ErrorModel
 from .circuit_build_options import CircuitBuildOptions
 from .edge_coloration import edge_coloration
-from .base import CircuitBuilder
+from .base import CircuitBuilder, EdgeLayering
 
 
 class CardinalBuilder(CircuitBuilder):
@@ -16,39 +16,38 @@ class CardinalBuilder(CircuitBuilder):
 
     def __init__(self, code=None):
         self.code = code
+        if code is not None:
+            code.set_draw_graph(self.draw_graph)
 
     def build(self, code, **opts):
         self.code = code
         self.build_graph(**opts)
         return self.code.graph
 
-    # Draw the Tanner graph node-only, direction, or layer-color view.
-    def draw_graph(
-        self,
-        part="node",
-        draw_edges=True,
-        x_scale=3.0,
-        y_scale=3.0,
-        node_size=100,
-        font_size=8,
-        figsize=None,
-    ):
+    def _resolve_positions(self, graph, layout=None, **kwargs):
         code = self.code
-        part = part.lower()
-        if part not in ("node", "color", "direction"):
-            raise ValueError("For cardinal draw_graph, part must be one of: node, color, direction.")
-        if code is None or not hasattr(code, "graph"):
-            raise ValueError("CardinalBuilder.draw_graph requires an initialized code graph.")
+        if (
+            layout is not None
+            and code.data_qubits is not None
+            and code.zcheck_qubits is not None
+            and code.xcheck_qubits is not None
+        ):
+            pos = layout.node_positions(
+                data_qubits=code.data_qubits,
+                zcheck_qubits=code.zcheck_qubits,
+                xcheck_qubits=code.xcheck_qubits,
+            )
+            if all(node in pos for node in graph.nodes()):
+                return {node: pos[node] for node in graph.nodes()}
+        return nx.get_node_attributes(graph, "pos")
 
-        graph = code.graph
-        pos = nx.get_node_attributes(graph, "pos")
-        if x_scale != 1.0 or y_scale != 1.0:
-            pos = {k: (v[0] * x_scale, v[1] * y_scale) for k, v in pos.items()}
-
+    def _get_node_colors(self, graph):
+        code = self.code
         nodes = list(graph.nodes())
         data_set = set(int(q) for q in code.data_qubits)
         zcheck_set = set(int(q) for q in code.zcheck_qubits)
         xcheck_set = set(int(q) for q in code.xcheck_qubits)
+
         def _node_color(node):
             if node in data_set:
                 return "blue"
@@ -57,74 +56,10 @@ class CardinalBuilder(CircuitBuilder):
             if node in xcheck_set:
                 return "purple"
             return "gray"
-        node_colors = [_node_color(node) for node in nodes]
+        return [_node_color(node) for node in nodes]
 
-        if figsize is not None:
-            try:
-                import matplotlib.pyplot as plt
-                plt.figure(figsize=figsize)
-            except ImportError:
-                pass
-
-        if part == "node":
-            # draw_edges is kept for API compatibility with ZXColorationBuilder.draw_graph.
-            nx.draw(
-                graph,
-                pos,
-                nodelist=nodes,
-                node_color=node_colors,
-                edgelist=[],
-                node_size=node_size,
-                font_size=font_size,
-                with_labels=True,
-                font_color="white",
-            )
-            return
-
-        if part == "direction":
-            direction_color_map = {
-                "E": "tab:green",
-                "N": "tab:blue",
-                "S": "tab:orange",
-                "W": "tab:red",
-            }
-            direction_by_edge = {}
-            for direction in ("E", "N", "S", "W"):
-                for u, v in getattr(code, f"edges_{direction}", []):
-                    direction_by_edge[frozenset((u, v))] = direction
-
-            edges = list(graph.edges())
-            edge_colors = [
-                direction_color_map.get(direction_by_edge.get(frozenset((u, v))), "tab:gray")
-                for u, v in edges
-            ]
-
-            nx.draw(
-                graph,
-                pos,
-                nodelist=nodes,
-                node_color=node_colors,
-                edgelist=edges,
-                edge_color=edge_colors,
-                node_size=node_size,
-                font_size=font_size,
-                with_labels=True,
-                font_color="white",
-            )
-            return
-
-        # part == "color": color each edge by its CNOT layer in the cardinal schedule.
-        palette = [
-            "tab:blue", "tab:orange", "tab:green", "tab:red",
-            "tab:purple", "tab:brown", "tab:pink", "tab:gray",
-            "tab:olive", "tab:cyan", "gold", "navy",
-            "teal", "crimson", "darkorange", "slateblue",
-            "seagreen", "indigo", "peru", "darkcyan",
-            "firebrick", "darkgreen", "sienna", "dodgerblue",
-        ]
-
-        layer_index_by_edge = {}
-        layer = 0
+    def _get_edge_layering(self, graph):
+        code = self.code
         direction_order = ("E", "N", "S", "W")
         colored_edges_by_direction = {
             "E": getattr(code, "colored_edges_E", {}),
@@ -132,32 +67,11 @@ class CardinalBuilder(CircuitBuilder):
             "S": getattr(code, "colored_edges_S", {}),
             "W": getattr(code, "colored_edges_W", {}),
         }
-        num_colors = getattr(code, "num_colors", {"E": 0, "N": 0, "S": 0, "W": 0})
+        layers = []
         for direction in direction_order:
-            for color in range(num_colors.get(direction, 0)):
-                for u, v in colored_edges_by_direction[direction].get(color, []):
-                    layer_index_by_edge[frozenset((u, v))] = layer
-                layer += 1
-
-        edges = list(graph.edges())
-        edge_colors = [
-            palette[layer_index_by_edge.get(frozenset((u, v)), 0) % len(palette)]
-            for u, v in edges
-        ]
-
-        nx.draw(
-            graph,
-            pos,
-            nodelist=nodes,
-            node_color=node_colors,
-            edgelist=edges,
-            edge_color=edge_colors,
-            node_size=node_size,
-            font_size=font_size,
-            with_labels=True,
-            font_color="white",
-        )
-        return
+            for color in sorted(colored_edges_by_direction[direction]):
+                layers.append(list(colored_edges_by_direction[direction][color]))
+        return EdgeLayering(layers=layers)
 
     def build_graph(self, **opts):
         code = self.code

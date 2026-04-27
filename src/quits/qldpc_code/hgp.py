@@ -111,7 +111,7 @@ class HgpCode(QldpcCode):
         elif not isinstance(circuit_build_options, CircuitBuildOptions):
             raise TypeError("circuit_build_options must be a CircuitBuildOptions instance.")
         
-        if strategy in ("cardinal", "cardinalNSmerge"):
+        if strategy in {"cardinal", "cardinalNSmerge"}:
             seed = opts.get("seed", 1)
             return self._build_cardinal_circuit(
                 error_model=error_model,
@@ -119,7 +119,7 @@ class HgpCode(QldpcCode):
                 basis=basis,
                 circuit_build_options=circuit_build_options,
                 seed=seed,
-                builder_name=strategy,
+                strategy=strategy,
             )
         elif strategy == "zxcoloration":
             builder = get_builder("zxcoloration", self)
@@ -139,7 +139,7 @@ class HgpCode(QldpcCode):
         basis="Z",
         circuit_build_options=None,
         seed=1,
-        builder_name="cardinal",
+        strategy="cardinal",
     ):
         """
         Build a cardinal circuit for this HGP code.
@@ -152,7 +152,7 @@ class HgpCode(QldpcCode):
             circuit_build_options = CircuitBuildOptions()
         elif not isinstance(circuit_build_options, CircuitBuildOptions):
             raise TypeError("circuit_build_options must be a CircuitBuildOptions instance.")
-        builder = get_builder(builder_name, self)
+        builder = get_builder(strategy, self)
         builder.build_graph()
         data_qubits, zcheck_qubits, xcheck_qubits = [], [], []
 
@@ -190,8 +190,8 @@ class HgpCode(QldpcCode):
         self.check_qubits = np.concatenate((self.zcheck_qubits, self.xcheck_qubits))
         self.all_qubits = sorted(np.array(data_qubits + zcheck_qubits + xcheck_qubits))                
 
-        hedge_bool_list = self.get_classical_edge_bools(self.h1, seed)
-        vedge_bool_list = self.get_classical_edge_bools(self.h2, seed)
+        hedge_bool_list = builder.get_classical_edge_bools(self.h1, seed)
+        vedge_bool_list = builder.get_classical_edge_bools(self.h2, seed)
 
         for classical_edge in np.argwhere(self.h1 == 1):
             c0, c1 = classical_edge
@@ -215,7 +215,6 @@ class HgpCode(QldpcCode):
                     direction = 'S'
                 builder.add_edge(direction, control, target)
 
-        # Color the edges of self.graph
         builder.color_edges()
         return builder.get_cardinal_circuit(
             error_model=error_model,

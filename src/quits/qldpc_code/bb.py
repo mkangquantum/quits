@@ -92,7 +92,8 @@ class BbCode(QldpcCode):
             raise TypeError("circuit_build_options must be a CircuitBuildOptions instance.")
         
         if strategy == "custom":
-            return self._build_custom_circuit(
+            get_builder("custom", self)
+            return self.get_custom_circuit(
                 error_model=error_model,
                 num_rounds=num_rounds,
                 basis=basis,
@@ -109,31 +110,24 @@ class BbCode(QldpcCode):
         else:
             return super().build_circuit(strategy=strategy, **opts)
 
-    def _build_custom_circuit(
-        self,
-        error_model=None,
-        num_rounds=0,
-        basis="Z",
-        circuit_build_options=None,
-    ):
+    def _ensure_custom_qubit_indexing(self):
         n = int(self.hx.shape[1])
         if n % 2 != 0:
             raise ValueError("Number of data qubits must be even.")
         half = n // 2
 
-        if error_model is None:
-            error_model = ErrorModel()
-        if circuit_build_options is None:
-            circuit_build_options = CircuitBuildOptions()
-        elif not isinstance(circuit_build_options, CircuitBuildOptions):
-            raise TypeError("circuit_build_options must be a CircuitBuildOptions instance.")
+        x_check_offset = 0
+        l_data_offset = half
+        z_check_offset = n + half
 
-        basis = basis.upper()
-        if basis not in ("Z", "X"):
-            raise ValueError("basis must be 'Z' or 'X'.")
-        get_Z_detectors = True if basis == 'Z' or circuit_build_options.get_all_detectors else False
-        get_X_detectors = True if basis == 'X' or circuit_build_options.get_all_detectors else False
+        self.data_qubits = np.arange(l_data_offset, l_data_offset + n, dtype=int)
+        self.zcheck_qubits = np.arange(z_check_offset, z_check_offset + half, dtype=int)
+        self.xcheck_qubits = np.arange(x_check_offset, x_check_offset + half, dtype=int)
+        self.check_qubits = np.concatenate((self.zcheck_qubits, self.xcheck_qubits))
+        self.all_qubits = np.arange(n + 2 * half, dtype=int)
+        return half
 
+    def _custom_shift_edge_maps(self):
         S_l = get_circulant_mat(self.l, -1)
         S_m = get_circulant_mat(self.m, -1)
         x = np.kron(S_l, np.eye(self.m, dtype=int))
@@ -153,80 +147,96 @@ class BbCode(QldpcCode):
         if len(A_list) != 3 or len(B_list) != 3:
             raise ValueError("A and B must each define exactly 3 shift terms.")
 
-        a1, a2, a3 = A_list
-        b1, b2, b3 = B_list
-
-        def nnz(m):
-            rows, cols = np.nonzero(m)
+        def nnz(matrix):
+            rows, cols = np.nonzero(matrix)
             order = np.argsort(rows)
             return cols[order]
 
-        A1, A2, A3 = nnz(a1), nnz(a2), nnz(a3)
-        B1, B2, B3 = nnz(b1), nnz(b2), nnz(b3)
-        A1_T, A2_T, A3_T = nnz(a1.T), nnz(a2.T), nnz(a3.T)
-        B1_T, B2_T, B3_T = nnz(b1.T), nnz(b2.T), nnz(b3.T)
+        a1, a2, a3 = A_list
+        b1, b2, b3 = B_list
+        return {
+            "A1": nnz(a1),
+            "A2": nnz(a2),
+            "A3": nnz(a3),
+            "B1": nnz(b1),
+            "B2": nnz(b2),
+            "B3": nnz(b3),
+            "A1_T": nnz(a1.T),
+            "A2_T": nnz(a2.T),
+            "A3_T": nnz(a3.T),
+            "B1_T": nnz(b1.T),
+            "B2_T": nnz(b2.T),
+            "B3_T": nnz(b3.T),
+        }
+
+    def get_custom_schedule_edges(self):
+        half = self._ensure_custom_qubit_indexing()
+        shift_maps = self._custom_shift_edge_maps()
 
         x_check_offset = 0
         l_data_offset = half
-        r_data_offset = n
-        z_check_offset = n + half
+        r_data_offset = 2 * half
+        z_check_offset = 3 * half
 
-        data_qubits = list(np.arange(l_data_offset, l_data_offset + n, dtype=int))
-        zcheck_qubits = list(np.arange(z_check_offset, z_check_offset + half, dtype=int))
-        xcheck_qubits = list(np.arange(x_check_offset, x_check_offset + half, dtype=int))
+        def make_edges(control_offset, target_offset, mapping, mapping_option):
+            if mapping_option == "c":
+                return [(control_offset + int(mapping[i]), target_offset + i) for i in range(half)]
+            if mapping_option == "t":
+                return [(control_offset + i, target_offset + int(mapping[i])) for i in range(half)]
+            raise ValueError("mapping_option must be 'c' or 't'.")
 
-        self.data_qubits = np.array(data_qubits)
-        self.zcheck_qubits = np.array(zcheck_qubits)
-        self.xcheck_qubits = np.array(xcheck_qubits)
-        self.check_qubits = np.concatenate((self.zcheck_qubits, self.xcheck_qubits))
-        self.all_qubits = sorted(np.array(data_qubits + zcheck_qubits + xcheck_qubits))
+        schedule_edges = {
+            "round1": make_edges(r_data_offset, z_check_offset, shift_maps["A1_T"], "c"),
+            "round2": make_edges(x_check_offset, l_data_offset, shift_maps["A2"], "t")
+            + make_edges(r_data_offset, z_check_offset, shift_maps["A3_T"], "c"),
+            "round3": make_edges(x_check_offset, r_data_offset, shift_maps["B2"], "t")
+            + make_edges(l_data_offset, z_check_offset, shift_maps["B1_T"], "c"),
+            "round4": make_edges(x_check_offset, r_data_offset, shift_maps["B1"], "t")
+            + make_edges(l_data_offset, z_check_offset, shift_maps["B2_T"], "c"),
+            "round5": make_edges(x_check_offset, r_data_offset, shift_maps["B3"], "t")
+            + make_edges(l_data_offset, z_check_offset, shift_maps["B3_T"], "c"),
+            "round6": make_edges(x_check_offset, l_data_offset, shift_maps["A1"], "t")
+            + make_edges(r_data_offset, z_check_offset, shift_maps["A2_T"], "c"),
+            "round7": make_edges(x_check_offset, l_data_offset, shift_maps["A3"], "t"),
+        }
+        return schedule_edges
+
+    def get_custom_circuit(
+        self,
+        error_model=None,
+        num_rounds=0,
+        basis="Z",
+        circuit_build_options=None,
+    ):
+        self._ensure_custom_qubit_indexing()
+
+        if error_model is None:
+            error_model = ErrorModel()
+        if circuit_build_options is None:
+            circuit_build_options = CircuitBuildOptions()
+        elif not isinstance(circuit_build_options, CircuitBuildOptions):
+            raise TypeError("circuit_build_options must be a CircuitBuildOptions instance.")
+
+        basis = basis.upper()
+        if basis not in ("Z", "X"):
+            raise ValueError("basis must be 'Z' or 'X'.")
+        get_Z_detectors = basis == "Z" or circuit_build_options.get_all_detectors
+        get_X_detectors = basis == "X" or circuit_build_options.get_all_detectors
+        schedule_edges = self.get_custom_schedule_edges()
 
         circ = Circuit(self.all_qubits)
-
-        ########### Code for adding syndrome extraction round ##############
-        def make_edges(control_offset, target_offset, mapping, mapping_option):
-            if mapping_option == 'c':
-                return [(control_offset + int(mapping[i]), target_offset + i) for i in range(half)]
-            elif mapping_option == 't':
-                return [(control_offset + i, target_offset + int(mapping[i])) for i in range(half)]
-            else:
-                raise ValueError("mapping_option must be 'c' or 't'.")
-
-        edges_round1 = make_edges(r_data_offset, z_check_offset, A1_T, 'c')
-        edges_round2 = make_edges(x_check_offset, l_data_offset, A2, 't') + make_edges(
-            r_data_offset, z_check_offset, A3_T, 'c'
-        )
-        edges_round3 = make_edges(x_check_offset, r_data_offset, B2, 't') + make_edges(
-            l_data_offset, z_check_offset, B1_T, 'c'
-        )
-        edges_round4 = make_edges(x_check_offset, r_data_offset, B1, 't') + make_edges(
-            l_data_offset, z_check_offset, B2_T, 'c'
-        )
-        edges_round5 = make_edges(x_check_offset, r_data_offset, B3, 't') + make_edges(
-            l_data_offset, z_check_offset, B3_T, 'c'
-        )
-        edges_round6 = make_edges(x_check_offset, l_data_offset, A1, 't') + make_edges(
-            r_data_offset, z_check_offset, A2_T, 'c'
-        )
-        edges_round7 = make_edges(x_check_offset, l_data_offset, A3, 't')
-        self.depth = 7
+        self.depth = len(schedule_edges)
 
         def flatten(edges):
             return [q for edge in edges for q in edge]
 
         def _add_stabilizer_round():
             circ.add_hadamard_layer(self.xcheck_qubits)
-            circ.add_cnot_layer(flatten(edges_round1))
-            circ.add_cnot_layer(flatten(edges_round2))
-            circ.add_cnot_layer(flatten(edges_round3))
-            circ.add_cnot_layer(flatten(edges_round4))
-            circ.add_cnot_layer(flatten(edges_round5))
-            circ.add_cnot_layer(flatten(edges_round6))
-            circ.add_cnot_layer(flatten(edges_round7))
+            for round_name in ("round1", "round2", "round3", "round4", "round5", "round6", "round7"):
+                circ.add_cnot_layer(flatten(schedule_edges[round_name]))
             circ.add_hadamard_layer(self.xcheck_qubits)
             circ.add_measure_reset_layer(self.check_qubits)
 
-        ################## Logical state prep ##################
         if circuit_build_options.noisy_zeroth_round:
             circ.set_error_model(error_model)
         else:
@@ -238,54 +248,55 @@ class BbCode(QldpcCode):
 
         _add_stabilizer_round()
 
-        if basis == 'Z':
-            for i in range(1, len(self.zcheck_qubits)+1)[::-1]:
+        if basis == "Z":
+            for i in range(1, len(self.zcheck_qubits) + 1)[::-1]:
                 circ.add_detector([len(self.xcheck_qubits) + i])
-        elif basis == 'X':
-            for i in range(1, len(self.xcheck_qubits)+1)[::-1]:
+        else:
+            for i in range(1, len(self.xcheck_qubits) + 1)[::-1]:
                 circ.add_detector([i])
 
-        ############## Logical memory w/ noise ###############
         circ.set_error_model(error_model)
 
         if num_rounds > 0:
             circ.start_loop(num_rounds)
-
             _add_stabilizer_round()
 
             if get_Z_detectors:
-                for i in range(1, len(self.zcheck_qubits)+1)[::-1]:
+                for i in range(1, len(self.zcheck_qubits) + 1)[::-1]:
                     ind = len(self.xcheck_qubits) + i
                     circ.add_detector([ind, ind + len(self.check_qubits)])
             if get_X_detectors:
-                for i in range(1, len(self.xcheck_qubits)+1)[::-1]:
+                for i in range(1, len(self.xcheck_qubits) + 1)[::-1]:
                     circ.add_detector([i, i + len(self.check_qubits)])
 
             circ.end_loop()
 
-        ################## Logical measurement ##################
         if not circuit_build_options.noisy_final_meas:
             circ.set_error_model(ErrorModel.zero())
 
         circ.add_measure(self.data_qubits, basis)
 
-        if basis == 'Z':
-            for i in range(1, len(self.zcheck_qubits)+1)[::-1]:
+        if basis == "Z":
+            for i in range(1, len(self.zcheck_qubits) + 1)[::-1]:
                 inds = np.array([len(self.data_qubits) + len(self.xcheck_qubits) + i])
-                inds = np.concatenate((inds, len(self.data_qubits) - np.where(self.hz[len(self.zcheck_qubits)-i, :]==1)[0]))
+                inds = np.concatenate(
+                    (inds, len(self.data_qubits) - np.where(self.hz[len(self.zcheck_qubits) - i, :] == 1)[0])
+                )
                 circ.add_detector(inds)
 
             for i in range(len(self.lz)):
-                circ.add_observable(i, len(self.data_qubits) - np.where(self.lz[i,:]==1)[0])
+                circ.add_observable(i, len(self.data_qubits) - np.where(self.lz[i, :] == 1)[0])
 
-        elif basis == 'X':
-            for i in range(1, len(self.xcheck_qubits)+1)[::-1]:
+        else:
+            for i in range(1, len(self.xcheck_qubits) + 1)[::-1]:
                 inds = np.array([len(self.data_qubits) + i])
-                inds = np.concatenate((inds, len(self.data_qubits) - np.where(self.hx[len(self.xcheck_qubits)-i, :]==1)[0]))
+                inds = np.concatenate(
+                    (inds, len(self.data_qubits) - np.where(self.hx[len(self.xcheck_qubits) - i, :] == 1)[0])
+                )
                 circ.add_detector(inds)
 
             for i in range(len(self.lx)):
-                circ.add_observable(i, len(self.data_qubits) - np.where(self.lx[i,:]==1)[0])
+                circ.add_observable(i, len(self.data_qubits) - np.where(self.lx[i, :] == 1)[0])
 
         return stim.Circuit(circ.circuit)
 

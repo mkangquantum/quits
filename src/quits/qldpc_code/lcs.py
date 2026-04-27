@@ -72,7 +72,7 @@ class LcsCode(QlpPolyCode):
         elif not isinstance(circuit_build_options, CircuitBuildOptions):
             raise TypeError("circuit_build_options must be a CircuitBuildOptions instance.")
         
-        if strategy in ("cardinal", "cardinalNSmerge"):
+        if strategy in {"cardinal", "cardinalNSmerge"}:
             seed = opts.get("seed", 1)
             return self._build_cardinal_circuit(
                 error_model=error_model,
@@ -80,7 +80,7 @@ class LcsCode(QlpPolyCode):
                 basis=basis,
                 circuit_build_options=circuit_build_options,
                 seed=seed,
-                builder_name=strategy,
+                strategy=strategy,
             )
         elif strategy == "zxcoloration":
             builder = get_builder("zxcoloration", self)

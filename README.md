@@ -5,10 +5,10 @@
 [![Python](https://img.shields.io/pypi/pyversions/quits)](https://pypi.org/project/quits/)
 [![License](https://img.shields.io/pypi/l/quits)](https://pypi.org/project/quits/)
 
-QUITS is a modular and flexible circuit-level simulator for quantum low-density parity-check (QLDPC) codes. It is designed so users can choose and mix different options for each module independently: code construction, circuit strategy, decoder, and noise model.
+QUITS is a modular and flexible circuit-level simulator for quantum low-density parity-check (QLDPC) codes. It is designed so users can choose and mix different options for each module independently: code construction, circuit strategy, decoder, noise model, and layout helper.
 
-*Example QLDPC code (Balanced Product Cyclic code) Tanner graph with cardinal circuit scheduling.*
-![BPC Tanner graph with cardinal circuit scheduling](https://raw.githubusercontent.com/mkangquantum/quits/v1.0.0/doc/assets/readme_graph.png)
+*Example QLDPC code (Balanced Product Cyclic code) Tanner graph with cardinal circuit scheduling and transversal layout.*
+![BPC Tanner graph with cardinal circuit scheduling and transversal layout](https://raw.githubusercontent.com/mkangquantum/quits/v1.0.0/doc/assets/readme_graph.png)
 
 
 ## Modular Architecture
@@ -19,6 +19,7 @@ QUITS is organized into clear modules, enabling flexible choice for each compone
 - `quits.qldpc_code.circuit_construction`: circuit-construction strategies and options.
 - `quits.decoder`: sliding-window phenomenological/circuit-level decoders, with flexibility in inner decoders (e.g. BP-OSD, BP-LSD, bring-your-own decoder).
 - `quits.noise.ErrorModel`: structured noise-model configuration (e.g. idling/single-qubit-gate/two-qubit-gate/SPAM error rates) for circuit generation.
+- `quits.layout`: layout and visualization helpers, including transversal and toric graph embeddings.
 
 For HGP codes, QUITS also includes a classical LDPC generator in `quits.ldpc_util`, including `generate_ldpc` and `generate_ldpc_good_girth`.
 

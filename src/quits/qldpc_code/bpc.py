@@ -159,7 +159,7 @@ class BpcCode(QldpcCode):
         elif not isinstance(circuit_build_options, CircuitBuildOptions):
             raise TypeError("circuit_build_options must be a CircuitBuildOptions instance.")
         
-        if strategy in ("cardinal", "cardinalNSmerge"):
+        if strategy in {"cardinal", "cardinalNSmerge"}:
             seed = opts.get("seed", 1)
             return self._build_cardinal_circuit(
                 error_model=error_model,
@@ -167,7 +167,7 @@ class BpcCode(QldpcCode):
                 basis=basis,
                 circuit_build_options=circuit_build_options,
                 seed=seed,
-                builder_name=strategy,
+                strategy=strategy,
             )
         elif strategy == "zxcoloration":
             builder = get_builder("zxcoloration", self)
@@ -187,7 +187,7 @@ class BpcCode(QldpcCode):
         basis="Z",
         circuit_build_options=None,
         seed=1,
-        builder_name="cardinal",
+        strategy="cardinal",
     ):
         """
         Build a cardinal circuit for this balanced-product cyclic code.
@@ -200,7 +200,7 @@ class BpcCode(QldpcCode):
             circuit_build_options = CircuitBuildOptions()
         elif not isinstance(circuit_build_options, CircuitBuildOptions):
             raise TypeError("circuit_build_options must be a CircuitBuildOptions instance.")
-        builder = get_builder(builder_name, self)
+        builder = get_builder(strategy, self)
         builder.build_graph()
         data_qubits, zcheck_qubits, xcheck_qubits = [], [], []
 
@@ -210,7 +210,7 @@ class BpcCode(QldpcCode):
                 node = i * self.lift_size + l
                 data_qubits += [node]
                 # Bottom left: data qubits
-                self.graph.add_node(node, pos=(l, i))
+                self.graph.add_node(node, pos=(l + i/self.factor, i))
 
         start = self.factor * self.lift_size
         for i in range(self.factor):
@@ -218,7 +218,7 @@ class BpcCode(QldpcCode):
                 node = start + i * self.lift_size + l
                 xcheck_qubits += [node]
                 # Bottom right: X-check qubits
-                self.graph.add_node(node, pos=(self.lift_size + l, i))
+                self.graph.add_node(node, pos=(self.lift_size + l + i/self.factor, i + 1/3))
 
         start = 2 * self.factor * self.lift_size
         for i in range(self.factor):
@@ -226,7 +226,7 @@ class BpcCode(QldpcCode):
                 node = start + i * self.lift_size + l
                 zcheck_qubits += [node]
                 # Top left: Z-check qubits
-                self.graph.add_node(node, pos=(l, self.factor + i))
+                self.graph.add_node(node, pos=(l + (i+1/3)/self.factor, self.factor + i))
 
         start = 3 * self.factor * self.lift_size
         for i in range(self.factor):
@@ -234,7 +234,7 @@ class BpcCode(QldpcCode):
                 node = start + i * self.lift_size + l
                 data_qubits += [node]
                 # Top right: data qubits
-                self.graph.add_node(node, pos=(self.lift_size + l, self.factor + i))
+                self.graph.add_node(node, pos=(self.lift_size + l + (i+1/3)/self.factor, self.factor + i + 1/3))
 
         self.data_qubits = sorted(np.array(data_qubits))
         self.zcheck_qubits = sorted(np.array(zcheck_qubits))
@@ -242,8 +242,8 @@ class BpcCode(QldpcCode):
         self.check_qubits = np.concatenate((self.zcheck_qubits, self.xcheck_qubits))
         self.all_qubits = sorted(np.array(data_qubits + zcheck_qubits + xcheck_qubits))
 
-        hedge_bool_list = self.get_classical_edge_bools(np.ones(self.b1.shape, dtype=int), seed)
-        vedge_bool_list = self.get_classical_edge_bools(np.ones(self.b1.shape, dtype=int), seed)
+        hedge_bool_list = builder.get_classical_edge_bools(np.ones(self.b1.shape, dtype=int), seed)
+        vedge_bool_list = builder.get_classical_edge_bools(np.ones(self.b1.shape, dtype=int), seed)
 
         # Add edges to the Tanner graph of each direction
         for i in range(self.factor):
@@ -284,7 +284,6 @@ class BpcCode(QldpcCode):
                         target = (2 + k) * self.factor * self.lift_size + i * self.lift_size + (l + shift) % self.lift_size
                         builder.add_edge(direction, control, target)
 
-        # Color the edges of self.graph
         builder.color_edges()
         return builder.get_cardinal_circuit(
             error_model=error_model,

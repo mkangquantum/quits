@@ -4,8 +4,9 @@ import stim
 
 # Reference: Q. Xu et al., arXiv:2308.08648 
 from ...circuit import Circuit
+from ...layout.transversal import TransversalLayout
 from ...noise import ErrorModel
-from .base import CircuitBuilder
+from .base import CircuitBuilder, EdgeLayering
 from .circuit_build_options import CircuitBuildOptions
 from .edge_coloration import edge_coloration
 
@@ -20,101 +21,43 @@ class ZXColorationBuilder(CircuitBuilder):
         self.build_graph()
         self.color_edges()
         # Expose drawing on the code object for convenience after circuit build.
-        self.code.draw_graph = self.draw_graph
+        self.code.set_draw_graph(self.draw_graph)
 
-    # Draw the Tanner graph of the code.
-    def draw_graph(
-        self,
-        part="all",
-        draw_edges=True,
-        x_scale=3.0,
-        y_scale=3.0,
-        node_size=100,
-        font_size=8,
-        figsize=None,
-    ):
+    def _resolve_positions(self, graph, layout=None, *, center_checks=True):
         code = self.code
-        part = part.lower()
+        if layout is None:
+            try:
+                layout = TransversalLayout(code, center_checks=center_checks)
+            except ValueError:
+                layout = None
 
-        if part in ("all", "tanner", "full"):
-            graph = code.graph
-        elif part in ("z", "zcheck", "z-check"):
-            graph = code.graph_Z
-        elif part in ("x", "xcheck", "x-check"):
-            graph = code.graph_X
-        else:
-            raise ValueError("part must be one of: all, z, x")
+        if layout is not None and code.data_qubits is not None and code.zcheck_qubits is not None and code.xcheck_qubits is not None:
+            pos = layout.node_positions(
+                data_qubits=code.data_qubits,
+                zcheck_qubits=code.zcheck_qubits,
+                xcheck_qubits=code.xcheck_qubits,
+            )
+            if all(node in pos for node in graph.nodes()):
+                return {node: pos[node] for node in graph.nodes()}
 
         pos = nx.get_node_attributes(code.graph, "pos")
-        if x_scale != 1.0 or y_scale != 1.0:
-            pos = {k: (v[0] * x_scale, v[1] * y_scale) for k, v in pos.items()}
-        nodes = list(graph.nodes())
-        node_colors = [code.node_colors[node] for node in nodes]
+        return {node: pos[node] for node in graph.nodes() if node in pos}
 
-        if figsize is not None:
-            try:
-                import matplotlib.pyplot as plt
-                plt.figure(figsize=figsize)
-            except ImportError:
-                pass
+    def _normalize_draw_part(self, part):
+        return super()._normalize_draw_part(part)
 
-        if not draw_edges:
-            nx.draw(
-                graph,
-                pos,
-                nodelist=nodes,
-                node_color=node_colors,
-                node_size=node_size,
-                font_size=font_size,
-                with_labels=True,
-                font_color="white",
-            )
-            return
+    def _get_node_colors(self, graph):
+        code = self.code
+        return [code.node_colors[node] for node in graph.nodes()]
 
-        palette = [
-            "tab:blue", "tab:orange", "tab:green", "tab:red",
-            "tab:purple", "tab:brown", "tab:pink", "tab:gray",
-            "tab:olive", "tab:cyan", "gold", "navy",
-            "teal", "crimson", "darkorange", "slateblue",
-            "seagreen", "indigo", "peru", "darkcyan", 
-            "firebrick", "darkgreen", "sienna", "dodgerblue",
-        ]
-
-        def _edge_color_map(colored_edges):
-            mapping = {}
-            for color_idx, edges in colored_edges.items():
-                for u, v in edges:
-                    mapping[frozenset((u, v))] = color_idx
-            return mapping
-
-        if part in ("all", "tanner", "full"):
-            edge_color_idx = {}
-            edge_color_idx.update(_edge_color_map(code.colored_edges_Z))
-            edge_color_idx.update(_edge_color_map(code.colored_edges_X))
-        elif part in ("z", "zcheck", "z-check"):
-            edge_color_idx = _edge_color_map(code.colored_edges_Z)
-        else:
-            edge_color_idx = _edge_color_map(code.colored_edges_X)
-
-        edges = list(graph.edges())
-        edge_colors = [
-            palette[edge_color_idx[frozenset((u, v))] % len(palette)]
-            for u, v in edges
-        ]
-
-        nx.draw(
-            graph,
-            pos,
-            nodelist=nodes,
-            node_color=node_colors,
-            edgelist=edges,
-            edge_color=edge_colors,
-            node_size=node_size,
-            font_size=font_size,
-            with_labels=True,
-            font_color="white",
-        )
-        return
+    def _get_edge_layering(self, graph):
+        code = self.code
+        layers = []
+        for color in sorted(code.colored_edges_Z):
+            layers.append(list(code.colored_edges_Z[color]))
+        for color in sorted(code.colored_edges_X):
+            layers.append(list(code.colored_edges_X[color]))
+        return EdgeLayering(layers=layers)
 
     def build_graph(self, **opts):
         code = self.code
@@ -141,25 +84,32 @@ class ZXColorationBuilder(CircuitBuilder):
         zcheck_qubits = np.arange(n_data, n_data + n_z, dtype=int)
         xcheck_qubits = np.arange(n_data + n_z, n_data + n_z + n_x, dtype=int)
 
-        for i in range(n_data):
-            code.graph.add_node(int(data_qubits[i]), pos=(i, 0))
-            code.node_colors += ["blue"]
-
-        for i in range(n_z):
-            node = int(zcheck_qubits[i])
-            code.graph.add_node(node, pos=(i, -1))
-            code.node_colors += ["green"]
-
-        for i in range(n_x):
-            node = int(xcheck_qubits[i])
-            code.graph.add_node(node, pos=(i, 1))
-            code.node_colors += ["purple"]
-
         code.data_qubits = data_qubits
         code.zcheck_qubits = zcheck_qubits
         code.xcheck_qubits = xcheck_qubits
         code.check_qubits = np.concatenate((zcheck_qubits, xcheck_qubits))
         code.all_qubits = np.arange(n_data + n_z + n_x, dtype=int)
+        layout = TransversalLayout(code, center_checks=True)
+        positions = layout.node_positions(
+            data_qubits=code.data_qubits,
+            zcheck_qubits=code.zcheck_qubits,
+            xcheck_qubits=code.xcheck_qubits,
+        )
+
+        for i in range(n_data):
+            node = int(data_qubits[i])
+            code.graph.add_node(node, pos=positions[node])
+            code.node_colors += ["blue"]
+
+        for i in range(n_z):
+            node = int(zcheck_qubits[i])
+            code.graph.add_node(node, pos=positions[node])
+            code.node_colors += ["green"]
+
+        for i in range(n_x):
+            node = int(xcheck_qubits[i])
+            code.graph.add_node(node, pos=positions[node])
+            code.node_colors += ["purple"]
 
         def _add_edge(basis, control, target):
             edge = (control, target)

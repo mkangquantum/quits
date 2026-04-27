@@ -6,7 +6,9 @@ The project aims to follow Semantic Versioning (SemVer).
 
 ## Unreleased
 
-Changes in this section are relative to `v1.0.0`.
+Changes in this section are relative to `v1.1.0`.
+
+## 1.1.0 - 2026-04-27
 
 ### Added
 - GitHub Actions CI for `pytest` across Python 3.10-3.12.

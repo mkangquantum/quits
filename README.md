@@ -8,7 +8,7 @@
 QUITS is a modular and flexible circuit-level simulator for quantum low-density parity-check (QLDPC) codes. It is designed so users can choose and mix different options for each module independently: code construction, circuit strategy, decoder, noise model, and layout helper.
 
 *Example QLDPC code (Balanced Product Cyclic code) Tanner graph with cardinal circuit scheduling and transversal layout.*
-![BPC Tanner graph with cardinal circuit scheduling and transversal layout](https://raw.githubusercontent.com/mkangquantum/quits/v1.0.0/doc/assets/readme_graph.png)
+![BPC Tanner graph with cardinal circuit scheduling and transversal layout](https://raw.githubusercontent.com/mkangquantum/quits/v1.1.0/doc/assets/readme_graph.png)
 
 
 ## Modular Architecture
@@ -25,12 +25,12 @@ For HGP codes, QUITS also includes a classical LDPC generator in `quits.ldpc_uti
 
 Supported code families include:
 
-- [Hypergraph Product (HGP) codes](https://github.com/mkangquantum/quits/blob/v1.0.0/doc/01A_codes_basics.ipynb)
-- [Quasi-cyclic Lifted Product (QLP) codes](https://github.com/mkangquantum/quits/blob/v1.0.0/doc/01A_codes_basics.ipynb)
-- [Balanced Product Cyclic (BPC) codes](https://github.com/mkangquantum/quits/blob/v1.0.0/doc/01A_codes_basics.ipynb)
-- [Lift-Connected Surface (LCS) codes](https://github.com/mkangquantum/quits/blob/v1.0.0/doc/01A_codes_basics.ipynb)
-- [Bivariate Bicycle (BB) codes](https://github.com/mkangquantum/quits/blob/v1.0.0/doc/01A_codes_basics.ipynb)
-- [**Any code**, if you bring the parity check matrices](https://github.com/mkangquantum/quits/blob/v1.0.0/doc/01B_make_my_own_code.ipynb)
+- [Hypergraph Product (HGP) codes](https://github.com/mkangquantum/quits/blob/v1.1.0/doc/01A_codes_basics.ipynb)
+- [Quasi-cyclic Lifted Product (QLP) codes](https://github.com/mkangquantum/quits/blob/v1.1.0/doc/01A_codes_basics.ipynb)
+- [Balanced Product Cyclic (BPC) codes](https://github.com/mkangquantum/quits/blob/v1.1.0/doc/01A_codes_basics.ipynb)
+- [Lift-Connected Surface (LCS) codes](https://github.com/mkangquantum/quits/blob/v1.1.0/doc/01A_codes_basics.ipynb)
+- [Bivariate Bicycle (BB) codes](https://github.com/mkangquantum/quits/blob/v1.1.0/doc/01A_codes_basics.ipynb)
+- [**Any code**, if you bring the parity check matrices](https://github.com/mkangquantum/quits/blob/v1.1.0/doc/01B_make_my_own_code.ipynb)
 
 For background on QUITS, see [arXiv:2504.02673](https://arxiv.org/abs/2504.02673).
 
@@ -46,9 +46,9 @@ For background on QUITS, see [arXiv:2504.02673](https://arxiv.org/abs/2504.02673
 | BB | yes | no | yes |
 | Any | yes | no | no |
 
-- [`zxcoloration`](https://github.com/mkangquantum/quits/blob/v1.0.0/doc/02C_zxcoloration_circuit_generation.ipynb) is available for all QLDPC codes.
-- [`cardinal`, `cardinalNSmerge`](https://github.com/mkangquantum/quits/blob/v1.0.0/doc/02B_cardinal_circuit_generation.ipynb) are available for HGP, QLP, BPC, and LCS.
-- [`custom`](https://github.com/mkangquantum/quits/blob/v1.0.0/doc/02A_custom_circuit_generation.ipynb) is available for BB code.
+- [`zxcoloration`](https://github.com/mkangquantum/quits/blob/v1.1.0/doc/02C_zxcoloration_circuit_generation.ipynb) is available for all QLDPC codes.
+- [`cardinal`, `cardinalNSmerge`](https://github.com/mkangquantum/quits/blob/v1.1.0/doc/02B_cardinal_circuit_generation.ipynb) are available for HGP, QLP, BPC, and LCS.
+- [`custom`](https://github.com/mkangquantum/quits/blob/v1.1.0/doc/02A_custom_circuit_generation.ipynb) is available for BB code.
 
 
 ## Recommended Companion Libraries
@@ -76,7 +76,7 @@ pip install -e .
 
 ## Quick Start Docs
 
-- [doc/00_getting_started.ipynb](https://github.com/mkangquantum/quits/blob/v1.0.0/doc/00_getting_started.ipynb)
+- [doc/00_getting_started.ipynb](https://github.com/mkangquantum/quits/blob/v1.1.0/doc/00_getting_started.ipynb)
 
 ## Acknowledgments
 

@@ -4,6 +4,8 @@
 [![PyPI](https://img.shields.io/pypi/v/quits)](https://pypi.org/project/quits/)
 [![Python](https://img.shields.io/pypi/pyversions/quits)](https://pypi.org/project/quits/)
 [![License](https://img.shields.io/pypi/l/quits)](https://pypi.org/project/quits/)
+[![Downloads](https://static.pepy.tech/badge/PACKAGE_NAME/month)](https://pepy.tech/project/quits)
+![Total GitHub release downloads](https://img.shields.io/github/downloads/mkangquantum/quits/total)
 
 QUITS is a modular and flexible circuit-level simulator for quantum low-density parity-check (QLDPC) codes. It is designed so users can choose and mix different options for each module independently: code construction, circuit strategy, decoder, noise model, and layout helper.
 

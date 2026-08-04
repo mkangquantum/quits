@@ -7,9 +7,8 @@ import numpy as np
 from ..noise import ErrorModel
 from .circuit_construction import get_builder
 from .circuit_construction.circuit_build_options import CircuitBuildOptions
-from ..gf2_util import compute_lz_and_lx
+from ..gf2_util import compute_lz_and_lx, lift, lift_enc
 from .base import QldpcCode
-from .qldpc_util import lift, lift_enc
 
 
 class QlpCode(QldpcCode):

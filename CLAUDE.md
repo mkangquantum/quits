@@ -16,7 +16,12 @@ src/quits/
 |-- api.py                  # Public API facade
 |-- circuit.py              # Stim circuit generation
 |-- simulation.py           # End-to-end simulation pipeline
-|-- gf2_util.py             # GF(2) linear algebra helpers
+|-- gf2_util/               # GF(2) linear algebra, group algebra, CSS utilities
+|   |-- __init__.py         # Flat re-export of the public API
+|   |-- linalg.py           # Core GF(2) linear algebra (rref, rank, solve, nullspace)
+|   |-- css.py              # CSS logicals, code parameters, code distance
+|   |-- group.py            # Finite groups and the group algebra F2[G]
+|   `-- lifted_product.py   # Lifted product LP(A,B), mitten codes, circulant lifts
 |-- ldpc_util.py            # Classical LDPC matrix generation
 |-- qldpc_code/             # QLDPC code families and utilities
 |   |-- __init__.py
@@ -26,7 +31,7 @@ src/quits/
 |   |-- bpc.py              # Balanced Product Cyclic codes
 |   |-- lcs.py              # Lift-Connected Surface codes
 |   |-- qlp.py              # Quasi-cyclic Lifted Product codes
-|   |-- qldpc_util.py       # Shared QLDPC utilities
+|   |-- qldpc_util.py       # Deprecated re-export shim (helpers moved to gf2_util)
 |   `-- circuit_construction/
 |       |-- __init__.py
 |       |-- base.py                  # Base circuit builder
@@ -76,7 +81,7 @@ src/quits/
 ## Repo Layout
 
 - `src/quits/` - main package (`python >= 3.10`, package version `1.1.0`)
-- `tests/` - pytest suite covering codes, circuits, decoders, edge coloration, sliding window, and `cardinalNSmerge`
+- `tests/` - pytest suite covering codes, circuits, decoders, edge coloration, sliding window, `cardinalNSmerge`, and the `gf2_util` package (compat/golden, linalg, CSS, group, lifted product)
 - `doc/` - Jupyter notebooks from `00_getting_started.ipynb` through end-to-end demos (`06A`, `06B`)
 - `examples/` - standalone scripts such as circuit-distance search
 - `parity_check_matrices/` - precomputed LDPC / QLDPC matrices

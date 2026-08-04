@@ -7,10 +7,10 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from ..gf2_util import compute_lz_and_lx, verify_css_logicals
+from ..gf2_util import get_circulant_mat as _get_circulant_mat
+from ..gf2_util import lift as _lift
+from ..gf2_util import lift_enc as _lift_enc
 from .circuit_construction import get_builder
-from .qldpc_util import get_circulant_mat as _get_circulant_mat
-from .qldpc_util import lift as _lift
-from .qldpc_util import lift_enc as _lift_enc
 
 if TYPE_CHECKING:
     from ..layout import Layout
@@ -62,7 +62,7 @@ class QldpcCode:
 
     def get_circulant_mat(self, size, power):
         warnings.warn(
-            "QldpcCode.get_circulant_mat is deprecated; use quits.qldpc_code.qldpc_util.get_circulant_mat instead.",
+            "QldpcCode.get_circulant_mat is deprecated; use quits.gf2_util.get_circulant_mat instead.",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -70,7 +70,7 @@ class QldpcCode:
 
     def lift(self, lift_size, h_base, h_base_placeholder):
         warnings.warn(
-            "QldpcCode.lift is deprecated; use quits.qldpc_code.qldpc_util.lift instead.",
+            "QldpcCode.lift is deprecated; use quits.gf2_util.lift instead.",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -78,7 +78,7 @@ class QldpcCode:
 
     def lift_enc(self, lift_size, h_base_enc, h_base_placeholder):
         warnings.warn(
-            "QldpcCode.lift_enc is deprecated; use quits.qldpc_code.qldpc_util.lift_enc instead.",
+            "QldpcCode.lift_enc is deprecated; use quits.gf2_util.lift_enc instead.",
             DeprecationWarning,
             stacklevel=2,
         )

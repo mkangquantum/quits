@@ -70,7 +70,7 @@ src/quits/
 | Balanced Product Cyclic | `bpc` | `zxcoloration`, `cardinal`, `cardinalNSmerge` |
 | Lift-Connected Surface | `lcs` | `zxcoloration`, `cardinal`, `cardinalNSmerge` |
 | Bivariate Bicycle | `bb` | `zxcoloration`, `custom` |
-| Mitten | `mitten` | `custom` (depth-12 interleaved, default), `hook_error_free` (depth-24), `zxcoloration` |
+| Mitten | `mitten` | `zxcoloration`, `hook_error_free`, `custom` |
 | Bring-your-own matrix | N/A | `zxcoloration` |
 
 ## Key Dependencies
@@ -85,6 +85,6 @@ src/quits/
 
 - `src/quits/` - main package (`python >= 3.10`, package version `1.1.0`)
 - `tests/` - pytest suite covering codes, circuits, decoders, edge coloration, sliding window, `cardinalNSmerge`, mitten codes, and the `gf2_util` package (compat/golden, linalg, CSS, group, lifted product)
-- `doc/` - Jupyter notebooks from `00_getting_started.ipynb` through end-to-end demos (`06A`, `06B`)
+- `doc/` - Jupyter notebooks from `00_getting_started.ipynb` through end-to-end demos (`06A`, `06B`, `06C`)
 - `examples/` - standalone scripts such as circuit-distance search
 - `parity_check_matrices/` - precomputed LDPC / QLDPC matrices

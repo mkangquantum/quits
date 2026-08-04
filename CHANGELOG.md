@@ -40,6 +40,10 @@ Changes in this section are relative to `v1.1.0`.
 - `tests/test_mitten.py` suite covering construction, logicals, all three
   strategy depths, schedule validity, stabilizer flows, detector determinism,
   and an end-to-end sliding-window memory experiment.
+- `doc/06C_end_to_end_demo_mitten.ipynb`: end-to-end mitten demo — seed
+  optimization of the `hook_error_free` schedule by estimated circuit-level
+  distance, compared against the `custom` (depth-12) strategy in depth and
+  simulated memory performance.
 
 ### Changed
 - `gf2_util.py` restructured into the `quits/gf2_util/` package

@@ -26,11 +26,11 @@ For HGP codes, QUITS also includes a classical LDPC generator in `quits.ldpc_uti
 
 Supported code families include:
 
-- [Hypergraph Product (HGP) codes](https://github.com/mkangquantum/quits/blob/v1.1.0/doc/01A_codes_basics.ipynb)
-- [Quasi-cyclic Lifted Product (QLP) codes](https://github.com/mkangquantum/quits/blob/v1.1.0/doc/01A_codes_basics.ipynb)
-- [Balanced Product Cyclic (BPC) codes](https://github.com/mkangquantum/quits/blob/v1.1.0/doc/01A_codes_basics.ipynb)
-- [Lift-Connected Surface (LCS) codes](https://github.com/mkangquantum/quits/blob/v1.1.0/doc/01A_codes_basics.ipynb)
-- [Bivariate Bicycle (BB) codes](https://github.com/mkangquantum/quits/blob/v1.1.0/doc/01A_codes_basics.ipynb)
+- Hypergraph Product (HGP) codes ([arXiv:0903.0566](https://arxiv.org/abs/0903.0566))
+- Quasi-cyclic Lifted Product (QLP) codes ([arXiv:2308.08648](https://arxiv.org/abs/2308.08648))
+- Balanced Product Cyclic (BPC) codes ([arXiv:2411.03302](https://arxiv.org/abs/2411.03302))
+- Lift-Connected Surface (LCS) codes ([arXiv:2401.02911](https://arxiv.org/abs/2401.02911))
+- Bivariate Bicycle (BB) codes ([arXiv:2308.07915](https://arxiv.org/abs/2308.07915))
 - Mitten codes ([arXiv:2607.28795](https://arxiv.org/abs/2607.28795))
 - [**Any code**, if you bring the parity check matrices](https://github.com/mkangquantum/quits/blob/v1.1.0/doc/01B_make_my_own_code.ipynb)
 

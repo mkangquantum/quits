@@ -83,13 +83,9 @@ def test_public_all_contents():
         # lifted_product
         "build_Hx_from_lifted_product",
         "build_Hz_from_lifted_product",
-        "mitten_canonical_logical_basis",
-        "conjugate_pair_overlaps",
         "get_circulant_mat",
-        "is_valid_mitten",
         "lift",
         "lift_enc",
-        "sample_mitten_base_matrices",
     ]
     assert sorted(gf2_util.__all__) == sorted(expected)
 

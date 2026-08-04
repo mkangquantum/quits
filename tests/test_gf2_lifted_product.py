@@ -1,4 +1,4 @@
-"""Unit tests for quits.gf2_util.lifted_product (LP codes, mitten family).
+"""Unit tests for quits.gf2_util.lifted_product (circulant lifts, LP codes).
 
 Golden values pin the behavior of the reference implementation of
 arXiv:2607.28795 bit-for-bit.
@@ -10,33 +10,23 @@ import pytest
 from quits.gf2_util import (
     build_Hx_from_lifted_product,
     build_Hz_from_lifted_product,
-    mitten_canonical_logical_basis,
     check_css,
     check_weights,
     compute_k,
-    conjugate_pair_overlaps,
     cyclic,
     dihedral,
     get_circulant_mat,
-    is_valid_mitten,
     left_rep,
     lift,
     lift_enc,
     qubit_weights,
-    right_rep,
-    sample_mitten_base_matrices,
     symmetric,
-    verify_css_logicals,
 )
 from quits.gf2_util.lifted_product import _check_rectangular
 
 # Fixed S3 lifted-product example (valid LP pair, NOT a valid mitten pair).
 S3_A = [[(0, 1, 3), (0, 2, 4)]]
 S3_B = [[(0, 1, 2), (0, 3, 5)]]
-
-# Mitten pair over cyclic(4), found by sample_mitten_base_matrices(C4, rng(1)).
-C4_A = [[(0, 1, 3), (0, 1, 3)]]
-C4_B = [[(0, 2, 3), (0, 1, 2)]]
 
 
 def _random_ring_matrix(gd, rng, shape, weight=3):
@@ -59,7 +49,8 @@ def test_lifted_product_css_condition_multiple_groups():
         rng = np.random.default_rng(seed)
         A = _random_ring_matrix(G, rng, (1, 2))
         B = _random_ring_matrix(G, rng, (1, 2))
-        assert check_css(build_Hx_from_lifted_product(A, B, G), build_Hz_from_lifted_product(A, B, G))
+        assert check_css(build_Hx_from_lifted_product(A, B, G),
+                         build_Hz_from_lifted_product(A, B, G))
 
 
 def test_s3_example_known_answer():
@@ -74,100 +65,11 @@ def test_s3_example_known_answer():
         "Hz_qubit_weight": 6,
         "qubit_weight": 12,
     }
-    assert not is_valid_mitten(S3_A, S3_B, G)
 
 
 def test_check_rectangular_raises_on_ragged_input():
     with pytest.raises(ValueError, match="not rectangular"):
         _check_rectangular([[(0,), (1,)], [(0,)]], "A")
-
-
-def test_is_valid_mitten_true_and_false_branches():
-    C4 = cyclic(4)
-    assert is_valid_mitten(C4_A, C4_B, C4)
-    # entry of weight 2
-    assert not is_valid_mitten([[(0, 1), (0, 1, 3)]], C4_B, C4)
-    # pivot entry without the identity
-    assert not is_valid_mitten([[(0, 1, 3), (1, 2, 3)]], C4_B, C4)
-    # rank-deficient pivot: over C3 the only weight-3 pivot is the whole
-    # group, whose left representation is the all-ones matrix (rank 1)
-    C3 = cyclic(3)
-    assert not is_valid_mitten([[(0, 1, 2), (0, 1, 2)]], [[(0, 1, 2), (0, 1, 2)]], C3)
-    with pytest.raises(ValueError, match="shape 1 x 2"):
-        is_valid_mitten([[(0, 1, 3)]], C4_B, C4)
-
-
-def test_sample_mitten_seeded_deterministic():
-    D4 = dihedral(4)
-    A, B = sample_mitten_base_matrices(D4, np.random.default_rng(1))
-    assert A == [[(2, 3, 6), (0, 1, 6)]]
-    assert B == [[(1, 2, 6), (0, 2, 5)]]
-    assert is_valid_mitten(A, B, D4)
-
-
-def test_sample_mitten_exhausts_trials():
-    # no valid mitten pair exists over C3 (see rank-deficiency test above)
-    with pytest.raises(RuntimeError, match="no valid mitten base matrices"):
-        sample_mitten_base_matrices(cyclic(3), np.random.default_rng(0), max_trials=50)
-
-
-def test_mitten_canonical_logical_basis_theorem1():
-    C4 = cyclic(4)
-    n = C4.n
-    Lx, Lz = mitten_canonical_logical_basis(C4_A, C4_B, C4)
-    Hx = build_Hx_from_lifted_product(C4_A, C4_B, C4)
-    Hz = build_Hz_from_lifted_product(C4_A, C4_B, C4)
-
-    assert np.array_equal((Lx @ Lz.T) % 2, np.eye(n, dtype=np.uint8))
-    assert not np.any((Hz.astype(np.int64) @ Lx.T.astype(np.int64)) % 2)
-    assert not np.any((Hx.astype(np.int64) @ Lz.T.astype(np.int64)) % 2)
-
-    # the defining equations of Theorem 1: U, V sit transposed in blocks D2, D3
-    (a0, a1), (b0, b1) = C4_A[0], C4_B[0]
-    U = Lx[:, n:2 * n].T
-    V = Lz[:, 2 * n:3 * n].T
-    assert np.array_equal(
-        (right_rep(b1, C4).astype(np.int64) @ U.astype(np.int64)) % 2,
-        right_rep(b0, C4),
-    )
-    assert np.array_equal(
-        (left_rep(a1, C4).astype(np.int64) @ V.astype(np.int64)) % 2,
-        left_rep(a0, C4),
-    )
-
-
-def test_canonical_basis_passes_quits_verifier():
-    C4 = cyclic(4)
-    Lx, Lz = mitten_canonical_logical_basis(C4_A, C4_B, C4)
-    Hx = build_Hx_from_lifted_product(C4_A, C4_B, C4)
-    Hz = build_Hz_from_lifted_product(C4_A, C4_B, C4)
-    report = verify_css_logicals(Hz, Hx, Lz, Lx)  # quits arg order: hz, hx, lz, lx
-    assert report["all_tests_passed"] is True
-
-
-def test_mitten_canonical_logical_basis_invalid_pair_raises():
-    G = symmetric(3)
-    with pytest.raises(ValueError, match="not a valid mitten pair"):
-        mitten_canonical_logical_basis(S3_A, S3_B, G)
-
-
-def test_mitten_canonical_logical_basis_golden():
-    C4 = cyclic(4)
-    Lx, Lz = mitten_canonical_logical_basis(C4_A, C4_B, C4)
-    expected_Lx = np.array([
-        [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    ], dtype=np.uint8)
-    expected_Lz = np.array([
-        [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-    ], dtype=np.uint8)
-    assert np.array_equal(Lx, expected_Lx)
-    assert np.array_equal(Lz, expected_Lz)
 
 
 def test_get_circulant_mat_known_answers():
@@ -205,14 +107,3 @@ def test_lift_enc_polynomial_known_answer():
     # encoded entry 0 with a placeholder 1 means the constant term x^0
     h = lift_enc(3, np.array([[0]], dtype=int), np.array([[1]], dtype=int))
     assert np.array_equal(h, np.eye(3, dtype=int))
-
-
-def test_conjugate_pair_overlaps_known():
-    C4 = cyclic(4)
-    Lx, Lz = mitten_canonical_logical_basis(C4_A, C4_B, C4)
-    assert np.array_equal(conjugate_pair_overlaps(Lx, Lz), np.array([1, 1, 1, 1]))
-    # disjoint supports
-    assert np.array_equal(
-        conjugate_pair_overlaps(np.array([[1, 0]]), np.array([[0, 1]])),
-        np.array([0]),
-    )

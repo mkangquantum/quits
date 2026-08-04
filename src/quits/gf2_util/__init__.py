@@ -5,9 +5,8 @@ Two layers:
 - GF(2) matrix routines and CSS logical-operator utilities (:mod:`.linalg`,
   :mod:`.css`), adapted in part from the QuantumGizmos ldpc package
   (https://github.com/quantumgizmos/ldpc).
-- Finite groups / F2[G] group algebra and the lifted-product (mitten) code
-  construction (:mod:`.group`, :mod:`.lifted_product`), following
-  arXiv:2607.28795.
+- Finite groups / F2[G] group algebra and the lifted-product construction
+  (:mod:`.group`, :mod:`.lifted_product`), following arXiv:2607.28795.
 
 The full public API is re-exported flat, so ``from quits.gf2_util import X``
 works for every name below.
@@ -57,13 +56,9 @@ from .group import (
 from .lifted_product import (
     build_Hx_from_lifted_product,
     build_Hz_from_lifted_product,
-    conjugate_pair_overlaps,
     get_circulant_mat,
-    is_valid_mitten,
     lift,
     lift_enc,
-    mitten_canonical_logical_basis,
-    sample_mitten_base_matrices,
 )
 
 __all__ = [
@@ -106,11 +101,7 @@ __all__ = [
     # lifted_product
     "build_Hx_from_lifted_product",
     "build_Hz_from_lifted_product",
-    "conjugate_pair_overlaps",
     "get_circulant_mat",
-    "is_valid_mitten",
     "lift",
     "lift_enc",
-    "mitten_canonical_logical_basis",
-    "sample_mitten_base_matrices",
 ]

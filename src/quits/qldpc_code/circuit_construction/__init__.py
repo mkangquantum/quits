@@ -3,6 +3,7 @@ from .cardinalNSmerge import CardinalNSMergeBuilder
 from .circuit_build_options import CircuitBuildOptions
 from .edge_coloration import edge_coloration
 from .custom import CustomBuilder
+from .schedule_validation import interleaving_parity_violations, verify_stabilizer_flows
 from .zxcoloration import ZXColorationBuilder
 
 _BUILDERS = {
@@ -30,4 +31,6 @@ __all__ = [
     "CustomBuilder",
     "CircuitBuildOptions",
     "edge_coloration",
+    "interleaving_parity_violations",
+    "verify_stabilizer_flows",
 ]

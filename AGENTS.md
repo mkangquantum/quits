@@ -21,7 +21,7 @@ src/quits/
 |   |-- linalg.py           # Core GF(2) linear algebra (rref, rank, solve, nullspace)
 |   |-- css.py              # CSS logicals, code parameters, code distance
 |   |-- group.py            # Finite groups and the group algebra F2[G]
-|   `-- lifted_product.py   # Lifted product LP(A,B), mitten codes, circulant lifts
+|   `-- lifted_product.py   # Lifted product LP(A,B) and circulant lifts
 |-- ldpc_util.py            # Classical LDPC matrix generation
 |-- qldpc_code/             # QLDPC code families and utilities
 |   |-- __init__.py
@@ -30,6 +30,7 @@ src/quits/
 |   |-- bb.py               # Bivariate Bicycle codes
 |   |-- bpc.py              # Balanced Product Cyclic codes
 |   |-- lcs.py              # Lift-Connected Surface codes
+|   |-- mitten.py           # Mitten codes (lifted product over F2[G]) + their SE schedules
 |   |-- qlp.py              # Quasi-cyclic Lifted Product codes
 |   |-- qldpc_util.py       # Deprecated re-export shim (helpers moved to gf2_util)
 |   `-- circuit_construction/
@@ -38,8 +39,9 @@ src/quits/
 |       |-- cardinal.py              # Cardinal scheduling strategy
 |       |-- cardinalNSmerge.py       # Cardinal variant with NS merge scheduling
 |       |-- custom.py                # Custom BB-specific strategy
-|       |-- zxcoloration.py          # ZX-coloration strategy
+|       |-- zxcoloration.py          # ZX-coloration strategy (auto coloring or prescribed layers)
 |       |-- edge_coloration.py       # Tanner-graph edge coloring
+|       |-- schedule_validation.py   # Interleaving parity and stabilizer-flow checks
 |       `-- circuit_build_options.py # Build option dataclass
 |-- decoder/
 |   |-- __init__.py
@@ -68,6 +70,7 @@ src/quits/
 | Balanced Product Cyclic | `bpc` | `zxcoloration`, `cardinal`, `cardinalNSmerge` |
 | Lift-Connected Surface | `lcs` | `zxcoloration`, `cardinal`, `cardinalNSmerge` |
 | Bivariate Bicycle | `bb` | `zxcoloration`, `custom` |
+| Mitten | `mitten` | `custom` (depth-12 interleaved, default), `hook_error_free` (depth-24), `zxcoloration` |
 | Bring-your-own matrix | N/A | `zxcoloration` |
 
 ## Key Dependencies
@@ -81,7 +84,7 @@ src/quits/
 ## Repo Layout
 
 - `src/quits/` - main package (`python >= 3.10`, package version `1.1.0`)
-- `tests/` - pytest suite covering codes, circuits, decoders, edge coloration, sliding window, `cardinalNSmerge`, and the `gf2_util` package (compat/golden, linalg, CSS, group, lifted product)
+- `tests/` - pytest suite covering codes, circuits, decoders, edge coloration, sliding window, `cardinalNSmerge`, mitten codes, and the `gf2_util` package (compat/golden, linalg, CSS, group, lifted product)
 - `doc/` - Jupyter notebooks from `00_getting_started.ipynb` through end-to-end demos (`06A`, `06B`)
 - `examples/` - standalone scripts such as circuit-distance search
 - `parity_check_matrices/` - precomputed LDPC / QLDPC matrices

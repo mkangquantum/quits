@@ -9,11 +9,10 @@ import numpy as np
 import stim
 
 from ..circuit import Circuit
-from ..gf2_util import compute_lz_and_lx
+from ..gf2_util import compute_lz_and_lx, get_circulant_mat
 from ..noise import ErrorModel
 from .circuit_construction import CircuitBuildOptions, get_builder
 from .base import QldpcCode
-from .qldpc_util import get_circulant_mat
 
 
 class BbCode(QldpcCode):

@@ -26,11 +26,12 @@ For HGP codes, QUITS also includes a classical LDPC generator in `quits.ldpc_uti
 
 Supported code families include:
 
-- [Hypergraph Product (HGP) codes](https://github.com/mkangquantum/quits/blob/v1.1.0/doc/01A_codes_basics.ipynb)
-- [Quasi-cyclic Lifted Product (QLP) codes](https://github.com/mkangquantum/quits/blob/v1.1.0/doc/01A_codes_basics.ipynb)
-- [Balanced Product Cyclic (BPC) codes](https://github.com/mkangquantum/quits/blob/v1.1.0/doc/01A_codes_basics.ipynb)
-- [Lift-Connected Surface (LCS) codes](https://github.com/mkangquantum/quits/blob/v1.1.0/doc/01A_codes_basics.ipynb)
-- [Bivariate Bicycle (BB) codes](https://github.com/mkangquantum/quits/blob/v1.1.0/doc/01A_codes_basics.ipynb)
+- Hypergraph Product (HGP) codes ([arXiv:0903.0566](https://arxiv.org/abs/0903.0566))
+- Quasi-cyclic Lifted Product (QLP) codes ([arXiv:2308.08648](https://arxiv.org/abs/2308.08648))
+- Balanced Product Cyclic (BPC) codes ([arXiv:2411.03302](https://arxiv.org/abs/2411.03302))
+- Lift-Connected Surface (LCS) codes ([arXiv:2401.02911](https://arxiv.org/abs/2401.02911))
+- Bivariate Bicycle (BB) codes ([arXiv:2308.07915](https://arxiv.org/abs/2308.07915))
+- Mitten codes ([arXiv:2607.28795](https://arxiv.org/abs/2607.28795))
 - [**Any code**, if you bring the parity check matrices](https://github.com/mkangquantum/quits/blob/v1.1.0/doc/01B_make_my_own_code.ipynb)
 
 For background on QUITS, see [arXiv:2504.02673](https://arxiv.org/abs/2504.02673).
@@ -45,11 +46,13 @@ For background on QUITS, see [arXiv:2504.02673](https://arxiv.org/abs/2504.02673
 | BPC | yes | yes | no |
 | LCS | yes | yes | no |
 | BB | yes | no | yes |
+| Mitten | yes | no | yes |
 | Any | yes | no | no |
 
 - [`zxcoloration`](https://github.com/mkangquantum/quits/blob/v1.1.0/doc/02C_zxcoloration_circuit_generation.ipynb) is available for all QLDPC codes.
 - [`cardinal`, `cardinalNSmerge`](https://github.com/mkangquantum/quits/blob/v1.1.0/doc/02B_cardinal_circuit_generation.ipynb) are available for HGP, QLP, BPC, and LCS.
 - [`custom`](https://github.com/mkangquantum/quits/blob/v1.1.0/doc/02A_custom_circuit_generation.ipynb) is available for BB code.
+- For mitten codes, `custom` (the default) is the mitten-specific depth-12 interleaved mixed X/Z schedule, and the additional `hook_error_free` strategy is the depth-24 group-element-layer schedule of [arXiv:2607.28795](https://arxiv.org/abs/2607.28795); `zxcoloration` gives depth 18.
 
 
 ## Recommended Companion Libraries

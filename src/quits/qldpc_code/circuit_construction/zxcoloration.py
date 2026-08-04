@@ -14,9 +14,24 @@ from .edge_coloration import edge_coloration
 class ZXColorationBuilder(CircuitBuilder):
     name = "zxcoloration"
 
-    def __init__(self, code):
+    def __init__(self, code, layers_Z=None, layers_X=None):
+        """Two-half (Z then X) syndrome-extraction circuit builder.
+
+        By default the entangling layers of each half come from an optimal
+        Tanner-graph edge coloring. Alternatively, a code family can prescribe
+        its own hand-structured schedule by passing explicit ``layers_Z`` /
+        ``layers_X`` (lists of layers, each a list of oriented
+        ``(control, target)`` pairs forming a matching); the layers must
+        jointly reproduce the Tanner edges derived from ``code.hz``/``code.hx``.
+        Mitten codes use this for their hook-error-free group-element-layer
+        schedule (arXiv:2607.28795).
+        """
         if code is None:
             raise ValueError("ZXColorationBuilder requires a code instance.")
+        if (layers_Z is None) != (layers_X is None):
+            raise ValueError("layers_Z and layers_X must be given together.")
+        self.layers_Z = None if layers_Z is None else [list(layer) for layer in layers_Z]
+        self.layers_X = None if layers_X is None else [list(layer) for layer in layers_X]
         self.code = code
         self.build_graph()
         self.color_edges()
@@ -145,8 +160,23 @@ class ZXColorationBuilder(CircuitBuilder):
 
     def color_edges(self):
         code = self.code
-        code.colored_edges_Z = edge_coloration(code.graph_Z)
-        code.colored_edges_X = edge_coloration(code.graph_X)
+        if self.layers_Z is not None:
+            # Prescribed schedule: it must implement exactly the Tanner graph.
+            scheduled_Z = {e for layer in self.layers_Z for e in layer}
+            scheduled_X = {e for layer in self.layers_X for e in layer}
+            if scheduled_Z != set(code.edges_Z):
+                raise ValueError(
+                    "layers_Z does not reproduce the Z Tanner edges derived from code.hz"
+                )
+            if scheduled_X != set(code.edges_X):
+                raise ValueError(
+                    "layers_X does not reproduce the X Tanner edges derived from code.hx"
+                )
+            code.colored_edges_Z = {i: list(layer) for i, layer in enumerate(self.layers_Z)}
+            code.colored_edges_X = {i: list(layer) for i, layer in enumerate(self.layers_X)}
+        else:
+            code.colored_edges_Z = edge_coloration(code.graph_Z)
+            code.colored_edges_X = edge_coloration(code.graph_X)
         code.num_colors["Z"] = len(code.colored_edges_Z)
         code.num_colors["X"] = len(code.colored_edges_X)
         # Total number of entangling gate layers across all edge-color groups.

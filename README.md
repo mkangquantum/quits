@@ -9,7 +9,7 @@
 QUITS is a modular and flexible circuit-level simulator for quantum low-density parity-check (QLDPC) codes. It is designed so users can choose and mix different options for each module independently: code construction, circuit strategy, decoder, noise model, and layout helper.
 
 *Example QLDPC code (Balanced Product Cyclic code) Tanner graph with cardinal circuit scheduling and transversal layout.*
-![BPC Tanner graph with cardinal circuit scheduling and transversal layout](https://raw.githubusercontent.com/mkangquantum/quits/v1.1.0/doc/assets/readme_graph.png)
+![BPC Tanner graph with cardinal circuit scheduling and transversal layout](https://raw.githubusercontent.com/mkangquantum/quits/v1.2.0/doc/assets/readme_graph.png)
 
 
 ## Modular Architecture
@@ -32,7 +32,7 @@ Supported code families include:
 - Lift-Connected Surface (LCS) codes ([arXiv:2401.02911](https://arxiv.org/abs/2401.02911))
 - Bivariate Bicycle (BB) codes ([arXiv:2308.07915](https://arxiv.org/abs/2308.07915))
 - Mitten codes ([arXiv:2607.28795](https://arxiv.org/abs/2607.28795))
-- [**Any code**, if you bring the parity check matrices](https://github.com/mkangquantum/quits/blob/v1.1.0/doc/01B_make_my_own_code.ipynb)
+- [**Any code**, if you bring the parity check matrices](https://github.com/mkangquantum/quits/blob/v1.2.0/doc/01B_make_my_own_code.ipynb)
 
 For background on QUITS, see [arXiv:2504.02673](https://arxiv.org/abs/2504.02673).
 
@@ -49,9 +49,9 @@ For background on QUITS, see [arXiv:2504.02673](https://arxiv.org/abs/2504.02673
 | Mitten | yes | no | yes |
 | Any | yes | no | no |
 
-- [`zxcoloration`](https://github.com/mkangquantum/quits/blob/v1.1.0/doc/02C_zxcoloration_circuit_generation.ipynb) is available for all QLDPC codes.
-- [`cardinal`, `cardinalNSmerge`](https://github.com/mkangquantum/quits/blob/v1.1.0/doc/02B_cardinal_circuit_generation.ipynb) are available for HGP, QLP, BPC, and LCS.
-- [`custom`](https://github.com/mkangquantum/quits/blob/v1.1.0/doc/02A_custom_circuit_generation.ipynb) is available for BB code.
+- [`zxcoloration`](https://github.com/mkangquantum/quits/blob/v1.2.0/doc/02C_zxcoloration_circuit_generation.ipynb) is available for all QLDPC codes.
+- [`cardinal`, `cardinalNSmerge`](https://github.com/mkangquantum/quits/blob/v1.2.0/doc/02B_cardinal_circuit_generation.ipynb) are available for HGP, QLP, BPC, and LCS.
+- [`custom`](https://github.com/mkangquantum/quits/blob/v1.2.0/doc/02A_custom_circuit_generation.ipynb) is available for BB code.
 - For mitten codes, `custom` (the default) is the mitten-specific depth-12 interleaved mixed X/Z schedule, and the additional `hook_error_free` strategy is the depth-24 group-element-layer schedule of [arXiv:2607.28795](https://arxiv.org/abs/2607.28795); `zxcoloration` gives depth 18.
 
 
@@ -80,7 +80,7 @@ pip install -e .
 
 ## Quick Start Docs
 
-- [doc/00_getting_started.ipynb](https://github.com/mkangquantum/quits/blob/v1.1.0/doc/00_getting_started.ipynb)
+- [doc/00_getting_started.ipynb](https://github.com/mkangquantum/quits/blob/v1.2.0/doc/00_getting_started.ipynb)
 
 ## Acknowledgments
 

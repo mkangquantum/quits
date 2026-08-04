@@ -6,6 +6,8 @@ from ldpc.bposd_decoder import BpOsdDecoder
 from quits.circuit import check_overlapping_CX
 from quits.decoder.sliding_window import sliding_window_phenom_mem
 from quits.gf2_util import (
+    build_Hx_from_lifted_product,
+    build_Hz_from_lifted_product,
     cyclic,
     dihedral,
     direct_product,
@@ -85,9 +87,9 @@ def _overlap_solution_structure(A, B, gd):
     and both equal the number of solutions ``(g, h)`` of ``i = g·j·h`` with
     ``g`` in ``a_ja`` and ``h`` in ``b_ib``.
     """
-    code = MittenCode(A, B, gd, validate=False, logicals="generic")
     n = gd.n
-    hx, hz = code.hx, code.hz
+    hz = build_Hz_from_lifted_product(A, B, gd)
+    hx = build_Hx_from_lifted_product(A, B, gd)
     supx = [set(np.where(hx[r])[0]) for r in range(2 * n)]
     supz = [set(np.where(hz[r])[0]) for r in range(2 * n)]
     lemma_holds, hist = True, {}
@@ -190,12 +192,6 @@ def test_canonical_logicals_golden():
     assert np.array_equal(code.lz, expected_lz)
 
 
-def test_get_canonical_logicals_invalid_pair_raises():
-    code = MittenCode(S3_A, S3_B, symmetric(3), validate=False, logicals="generic")
-    with pytest.raises(ValueError, match="not a valid mitten pair"):
-        code.get_canonical_logicals()
-
-
 def test_conjugate_pair_overlaps_known():
     code = _c4_code()
     assert np.array_equal(conjugate_pair_overlaps(code.lx, code.lz),
@@ -207,22 +203,9 @@ def test_conjugate_pair_overlaps_known():
     )
 
 
-def test_generic_logicals():
-    code = _c4_code(logicals="generic")
-    assert code.verify_css_logicals()["all_tests_passed"]
-    with pytest.raises(ValueError, match="'canonical' or 'generic'"):
-        _c4_code(logicals="bogus")
-
-
 def test_invalid_pair_raises():
-    S3 = symmetric(3)
     with pytest.raises(ValueError, match="not a valid mitten pair"):
-        MittenCode(S3_A, S3_B, S3)
-    # any 1x2 lifted product is admitted without validation, generic logicals
-    code = MittenCode(S3_A, S3_B, S3, validate=False, logicals="generic")
-    assert code.verify_css_logicals()["all_tests_passed"]
-    with pytest.raises(ValueError, match="requires validate=True"):
-        MittenCode(S3_A, S3_B, S3, validate=False, logicals="canonical")
+        MittenCode(S3_A, S3_B, symmetric(3))
 
 
 @pytest.mark.parametrize("strategy,depth", sorted(STRATEGY_DEPTHS.items()))

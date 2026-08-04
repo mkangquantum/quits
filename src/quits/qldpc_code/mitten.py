@@ -51,7 +51,6 @@ from ..circuit import Circuit
 from ..gf2_util import (
     build_Hx_from_lifted_product,
     build_Hz_from_lifted_product,
-    compute_lz_and_lx,
     gf2_rank,
     gf2_solve_square,
     left_rep,
@@ -168,12 +167,12 @@ class MittenCode(QldpcCode):
         A: ``1 × 2`` ring matrix ``[a0 a1]`` over ``F2[G]`` (weight-3 entries).
         B: ``1 × 2`` ring matrix ``[b0 b1]``.
         group: the group ``G`` as a ``quits.gf2_util.MultTableGroup``.
-        logicals: ``"canonical"`` (default) uses the paper's Theorem-1
-            conjugate-pair basis with ``lx @ lz.T = I``; ``"generic"`` uses
-            ``compute_lz_and_lx`` like the other code families.
-        validate: check :func:`is_valid_mitten` and raise ``ValueError`` on an
-            invalid pair. ``validate=False`` admits any ``1 × 2`` lifted
-            product but then requires ``logicals="generic"``.
+
+    The pair is checked with :func:`is_valid_mitten` and the logicals are the
+    paper's Theorem-1 conjugate-pair basis with ``lx @ lz.T = I``. To build a
+    generic ``1 × 2`` lifted product instead, pass
+    ``build_Hz_from_lifted_product`` / ``build_Hx_from_lifted_product`` output
+    to :meth:`QldpcCode.from_parity_checks`.
 
     Random base matrices can be drawn with
     :func:`sample_mitten_base_matrices`.
@@ -181,24 +180,17 @@ class MittenCode(QldpcCode):
 
     supported_strategies = {"custom", "hook_error_free", "zxcoloration"}
 
-    def __init__(self, A, B, group, *, logicals="canonical", validate=True):
+    def __init__(self, A, B, group):
         super().__init__()
         self.A, self.B, self.group = A, B, group
-        if validate and not is_valid_mitten(A, B, group):
+        if not is_valid_mitten(A, B, group):
             raise ValueError(
                 "(A, B) is not a valid mitten pair over the given group — "
                 "see is_valid_mitten"
             )
         self.hz = build_Hz_from_lifted_product(A, B, group)
         self.hx = build_Hx_from_lifted_product(A, B, group)
-        if logicals == "canonical":
-            if not validate:
-                raise ValueError("logicals='canonical' requires validate=True")
-            self.lz, self.lx = self.get_canonical_logicals()
-        elif logicals == "generic":
-            self.lz, self.lx = compute_lz_and_lx(self.hz, self.hx)
-        else:
-            raise ValueError("logicals must be 'canonical' or 'generic'")
+        self.lz, self.lx = self.get_canonical_logicals()
 
     def get_canonical_logicals(self):
         """Canonical logical basis of the mitten code (Theorem 1 of arXiv:2607.28795).
@@ -219,15 +211,8 @@ class MittenCode(QldpcCode):
         Returns:
             ``(lz, lx)``, each of shape ``(|G|, 5|G|)``, row ``g`` holding
             ``Z̄_g`` resp. ``X̄_g``. They satisfy ``lx · lzᵀ = I``.
-
-        Raises:
-            ValueError: if ``(A, B)`` is not a valid mitten pair.
         """
         gd = self.group
-        if not is_valid_mitten(self.A, self.B, gd):
-            raise ValueError(
-                "(A, B) is not a valid mitten pair — see is_valid_mitten"
-            )
         (a0, a1), (b0, b1) = self.A[0], self.B[0]
         n = gd.n
 

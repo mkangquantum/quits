@@ -6,7 +6,9 @@ The project aims to follow Semantic Versioning (SemVer).
 
 ## Unreleased
 
-Changes in this section are relative to `v1.1.0`.
+Changes in this section are relative to `v1.2.0`.
+
+## 1.2.0 - 2026-08-03
 
 ### Added
 - Finite-group / F2[G] group-algebra module (`quits.gf2_util.group`) and
@@ -44,6 +46,9 @@ Changes in this section are relative to `v1.1.0`.
   optimization of the `hook_error_free` schedule by estimated circuit-level
   distance, compared against the `custom` (depth-12) strategy in depth and
   simulated memory performance.
+- Mitten section in `doc/01A_codes_basics.ipynb`, including the published
+  code instances of arXiv:2607.28795 and a `[[500, 100]]` example built over
+  the non-abelian group `C5 : C20` from explicit permutation generators.
 
 ### Changed
 - `gf2_util.py` restructured into the `quits/gf2_util/` package
@@ -54,6 +59,13 @@ Changes in this section are relative to `v1.1.0`.
   `qldpc_util.py` remains as a deprecated re-export shim so
   `quits.qldpc_code.qldpc_util` imports keep working. The `QldpcCode`
   deprecation messages now point to `quits.gf2_util`.
+- The code-family list in the README now cites each family's paper.
+
+### Removed
+- `CardinalNSMergeBuilder`'s `draw_graph` override, so drawing goes through
+  the shared `CircuitBuilder` implementation like every other strategy. Its
+  strategy-specific `part="direction"` and `part="color"` modes are gone;
+  `part` now takes `"node"`, `"all"`, or a layer index, as elsewhere.
 
 ## 1.1.0 - 2026-04-27
 

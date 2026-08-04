@@ -83,7 +83,7 @@ src/quits/
 
 ## Repo Layout
 
-- `src/quits/` - main package (`python >= 3.10`, package version `1.1.0`)
+- `src/quits/` - main package (`python >= 3.10`, package version `1.2.0`)
 - `tests/` - pytest suite covering codes, circuits, decoders, edge coloration, sliding window, `cardinalNSmerge`, mitten codes, and the `gf2_util` package (compat/golden, linalg, CSS, group, lifted product)
 - `doc/` - Jupyter notebooks from `00_getting_started.ipynb` through end-to-end demos (`06A`, `06B`, `06C`)
 - `examples/` - standalone scripts such as circuit-distance search

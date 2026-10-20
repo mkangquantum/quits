@@ -107,6 +107,8 @@ class Circuit:
         """Append idling noise on the given qubits."""
         if self.idle_error == 0.:
             return ''
+        if len(qubits) == 0:
+            return ''
         
         c = self.margin
         if type(self.idle_error) == float or type(self.idle_error) == np.float64:
